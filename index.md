@@ -5,23 +5,23 @@ title: Arpit Rawat
 
 <div align="center">
 
-# Arpit Rawat \n
-Hello there!! I am a prefinal year undergrad interested in  AI systems and architecture. I am exploring open source codebases and architectures in NLP and high performance computing paradigm.
+# Arpit Rawat
 
-[GitHub](https://github.com/rwtarpit) | [LinkedIn](https://linkedin.com/rwt-arpit) | [Mail](arpitrawat0404@gmail.com)
+Hello there!! I am a pre-final year undergrad interested in **AI systems and architecture**. 
+
+I am exploring open-source codebases and architectures in NLP and the high-performance computing paradigm.
+
+[GitHub](https://github.com/rwtarpit) | [LinkedIn](https://linkedin.com/in/rwt-arpit) | [Mail](mailto:arpitrawat0404@gmail.com)
 
 </div>
 
-### 🛠 Skills
-* **Languages:** Python, C++, SQL
-* **Tools:** PyTorch, HuggingFace, Git
-
-### ✍️ Technical Writeups
-I document my deep dives into machine learning internals here:
-**[View all technical blog posts →](./blog)**
-
 ---
 
-### 💼 Experience
-* **Project Name** | Lead Developer | 2024 - Present
-* **Another Project** | Contributor | 2023
+## 🛠 Skills & Interests
+* **NLP:** Byte Pair Encoding, Tokenization, Transformers
+* **Systems:** High Performance Computing (HPC), AI Architecture
+* **Tools:** Python, PyTorch, Git
+
+## ✍️ Technical Writeups
+Check out my latest deep-dives:
+* **[Building a BPE Tokenizer from Scratch](./blog)**
