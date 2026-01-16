@@ -1,0 +1,8 @@
+title: Your Name Portfolio
+description: Resume and Technical Blog
+theme: minima  # This is a clean, default GitHub theme
+
+# This allows your blog posts to be found by the "for" loop in blog.md
+collections:
+  posts:
+    output: true
