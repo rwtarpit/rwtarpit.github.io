@@ -5,7 +5,7 @@ title: Arpit Rawat
 
 <div align="center">
 
-# Arpit Rawat
+# Arpit Rawat \n
 Hello there!! I am a prefinal year undergrad interested in  AI systems and architecture. I am exploring open source codebases and architectures in NLP and high performance computing paradigm.
 
 [GitHub](https://github.com/rwtarpit) | [LinkedIn](https://linkedin.com/rwt-arpit) | [Mail](arpitrawat0404@gmail.com)
