@@ -1,13 +1,16 @@
 ---
 layout: page
-title: About Me
+title: Arpit Rawat
 ---
 
-# Your Name
-**NLP Engineer | Python Developer**
+<div align="center">
 
-### 👋 Intro
-I am a developer interested in how Large Language Models process text. Currently, I'm focusing on building core NLP components from scratch to understand the "magic" under the hood.
+# Arpit Rawat
+Hello there!! I am a prefinal year undergrad interested in  AI systems and architecture. I am exploring open source codebases and architectures in NLP and high performance computing paradigm.
+
+[GitHub](https://github.com/rwtarpit) | [LinkedIn](https://linkedin.com/rwt-arpit) | [Mail](arpitrawat0404@gmail.com)
+
+</div>
 
 ### 🛠 Skills
 * **Languages:** Python, C++, SQL
