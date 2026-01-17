@@ -9,22 +9,23 @@ title: Arpit Rawat
   <p>
     <a href="https://github.com/rwtarpit">GitHub</a> |
     <a href="https://linkedin.com/in/rwt-arpit">LinkedIn</a> |
-    <a href="mailto:arpitrawat0404@gmail.com">Email</a>
+    <a href="arpitrawat0404@gmail.com">Mail</a>
   </p>
   <p>
-    Hello there!! I am a pre-final year BTech CSE student at MSIT (GGSIPU) interested in
-    <strong>AI systems and architecture</strong>. I am currently exploring open-source codebases,
-    NLP architectures, and high-performance computing paradigms.
+    Hello there!! I am a pre-final year CSE student interested in
+    <strong>AI systems and their architectures, GPUs and optimizations, and HPC.</strong>. I am currently exploring open-source codebases,
+    NLP architectures, and latest research breakthroughs in the field.
   </p>
 </div>
 
 ---
 
-## 🚀 Featured Projects
+## Projects
 
 ### **BPE Tokenizer from Scratch**
-- Designed and implemented a Byte Pair Encoding (BPE) tokenizer to understand the core of how LLMs process text.
-- Focused on the iterative merging of the most frequent byte pairs to create an efficient subword vocabulary.
+- Implemented a Byte Pair Encoding (BPE) tokenizer that can encode and decode text.
+- Used effective multiprocessing along with memory and speed optimizations in Python.
+- Trained the tokenizer on TinyStories and subset of OpenWebText.
 - **[Read the Technical Writeup →](./blog)**
 
 ### **Interview Simulator**
