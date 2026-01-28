@@ -1,56 +1,88 @@
 ---
 layout: page
-title: Arpit Rawat
+title: About Me
 ---
 
-<div align="center">
-  <h1>Arpit Rawat</h1>
-  <p><strong>Computer Science | AI/ML</strong> | New Delhi, India</p>
-  <p>
-    <a href="https://github.com/rwtarpit">GitHub</a> |
-    <a href="https://linkedin.com/in/rwt-arpit">LinkedIn</a> |
-    <a href="arpitrawat0404@gmail.com">Mail</a>
-  </p>
-  <p>
-    Hello there!! I am a pre-final year CSE student interested in
-    <strong>AI systems and their architectures, GPUs and optimizations, and HPC.</strong>. I am currently exploring open-source codebases,
-    NLP architectures, and latest research breakthroughs in the field.
-  </p>
+<div style="text-align: center; margin-top: 2rem; margin-bottom: 2rem;">
+
+<h1 style="margin-bottom: 0.5rem;">Arpit Rawat</h1>
+
+<p style="font-size: 1.05rem; margin: 0.5rem 0;">
+  <strong>Computer Science | AI/ML</strong><br>
+  📍 New Delhi
+</p>
+
+<p style="margin: 0.5rem 0;">
+  <a href="https://github.com/rwtarpit/">GitHub</a> |
+  <a href="{{ LINKEDIN_URL }}">LinkedIn</a> |
+  <a href="mailto:arpitrawat0404@gmail.com">Mail</a>
+</p>
+
+<div style="margin-top: 1rem;">
+  <a href="{{ OPEN_SOURCE_PAGE_LINK }}" 
+     style="display:inline-block; padding:8px 16px; border-radius:8px; 
+            background:#eef2ff; text-decoration:none; font-weight:600;">
+     🌐 View Open Source Contributions
+  </a>
 </div>
 
----
+</div>
 
-## Projects
+<hr style="margin: 2rem 0;">
 
-### **BPE Tokenizer from Scratch**
-- Implemented a Byte Pair Encoding (BPE) tokenizer that can encode and decode text.
-- Used effective multiprocessing along with memory and speed optimizations in Python.
-- Trained the tokenizer on TinyStories and subset of OpenWebText.
-- **[Read the Technical Writeup →](./blog)**
+<div style="background:#f9fafb; padding:1.8rem; border-radius:14px; margin-bottom:2.5rem; text-align: justify;">
 
-### **Interview Simulator**
-- Fine-tuned a **SmolLM-3B** model using **QLoRA** on a single Tesla-T4 GPU.
-- Scraped and processed mock interview data from YouTube using FFMPEG and augmented the dataset using the Gemini API.
-- Deployed the fine-tuned model weights directly to Hugging Face for public access.
+<p>
+Hello there!! I am a pre-final year CSE student interested in AI systems and their architectures, GPUs and optimizations, and HPC.. I am currently exploring open-source codebases, NLP architectures, and latest research breakthroughs in the field.
+</p>
 
----
+</div>
 
-## 🛠 Skills
-- **Languages:** Python, C/C++, SQL
-- **ML & NLP Frameworks:** PyTorch, Scikit-Learn, Hugging Face Transformers, TensorFlow-Keras, OpenCV
-- **Data Analysis:** Pandas, NumPy, Matplotlib, Seaborn, Plotly
-- **Technical Tools:** Git, GitHub, MySQL, SQLite
+<h2 style="margin-top:2.5rem;">🧠 Projects</h2>
 
----
+<div style="background:#f9fafb; padding:1.8rem; border-radius:14px; margin-bottom:2rem;">
 
-## 🌍 Open Source Contributions
+<h3>BPE Tokenizer from Scratch</h3>
+<ul>
+<li>Implemented a Byte Pair Encoding (BPE) tokenizer that can encode and decode text.</li>
+<li>Used effective multiprocessing along with memory and speed optimizations in Python.</li>
+<li>Trained the tokenizer on TinyStories and subset of OpenWebText.</li>
+</ul>
 
-### **Aeon-Toolkit**
-- Implemented the **Series2Series Forecasting** mixin class
-- Developed a **LinearForecaster** algorithm utilizing an MLP network via the Keras library
+</div>
 
----
+<div style="background:#f9fafb; padding:1.8rem; border-radius:14px; margin-bottom:2rem;">
 
-## 🎓 Education
-- **B.Tech in Computer Science** | Maharaja Surajmal Institute of Technology, GGSIPU (2023 – 2027)
-- **Grade 12th** | Lal Bahadur Shastri School (2021 – 2022)
+<h3>Interview Simulator</h3>
+<ul>
+<li>Fine-tuned a SmolLM-3B model using QLoRA on a single Tesla-T4 GPU.</li>
+<li>Scraped and processed mock interview data from YouTube using FFMPEG and augmented the dataset using the Gemini API.</li>
+<li>Deployed the fine-tuned model weights directly to Hugging Face for public access.</li>
+</ul>
+
+</div>
+
+<h2 style="margin-top:2.5rem;">🎓 Education</h2>
+
+<div style="background:#f9fafb; padding:1.8rem; border-radius:14px; margin-bottom:2rem;">
+
+<p>
+<strong>Maharaja Surajmal Institute of Technology</strong><br>
+BTech CSE | 2023-2027
+</p>
+
+</div>
+
+<!-- Repeat education block if required -->
+
+<h2 style="margin-top:2.5rem;">🏆 Achievements</h2>
+
+<div style="background:#f9fafb; padding:1.8rem; border-radius:14px; margin-bottom:2rem;">
+
+<ul>
+<li>{{ ACHIEVEMENT_1 }}</li>
+<li>{{ ACHIEVEMENT_2 }}</li>
+<li>{{ ACHIEVEMENT_3 }}</li>
+</ul>
+
+</div>
