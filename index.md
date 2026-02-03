@@ -35,7 +35,7 @@ Hello there!! I am a pre-final year BTech CSE student interested in <strong>AI s
 <div style="background:#f9fafb; padding:1.8rem; border-radius:14px; margin-bottom:2.5rem;">
 
 <ul>
-<li><strong><a href="./blog/bpe-tokenizer">Building a BPE Tokenizer from Scratch</a></strong> — A deep dive into subword tokenization, multiprocessing optimizations, and training on the TinyStories dataset.</li>
+<li><strong><a href="/2026/01/16/bpe.html">Building a BPE Tokenizer from Scratch</a></strong> — A deep dive into subword tokenization, multiprocessing optimizations, and training on the TinyStories dataset.</li>
 </ul>
 
 </div>
