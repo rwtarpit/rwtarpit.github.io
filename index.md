@@ -18,14 +18,6 @@ title: About Me
   <a href="mailto:arpitrawat0404@gmail.com">Mail</a>
 </p>
 
-<div style="margin-top: 1rem;">
-  <a href="./blog" 
-     style="display:inline-block; padding:8px 16px; border-radius:8px; 
-            background:#eef2ff; text-decoration:none; font-weight:600; color: #4f46e5;">
-      ✍️ View Technical Blog
-  </a>
-</div>
-
 </div>
 
 <hr style="margin: 2rem 0;">
@@ -38,6 +30,16 @@ Hello there!! I am a pre-final year BTech CSE student interested in <strong>AI s
 
 </div>
 
+<h2 style="margin-top:2.5rem;">✍️ Technical Blog</h2>
+
+<div style="background:#f9fafb; padding:1.8rem; border-radius:14px; margin-bottom:2.5rem;">
+
+<ul>
+<li><strong><a href="./blog/bpe-tokenizer">Building a BPE Tokenizer from Scratch</a></strong> — A deep dive into subword tokenization, multiprocessing optimizations, and training on the TinyStories dataset.</li>
+</ul>
+
+</div>
+
 <h2 style="margin-top:2.5rem;">🧠 Projects</h2>
 
 <div style="background:#f9fafb; padding:1.8rem; border-radius:14px; margin-bottom:2rem;">
@@ -45,7 +47,7 @@ Hello there!! I am a pre-final year BTech CSE student interested in <strong>AI s
 <h3>BPE Tokenizer from Scratch</h3>
 <ul>
 <li>Implemented a Byte Pair Encoding (BPE) tokenizer from the ground up to understand how LLMs process raw text.</li>
-<li>Optimized for speed and memory using Python multiprocessing.</li>
+[cite_start]<li>Optimized for speed and memory using Python multiprocessing. [cite: 1]</li>
 <li>Trained the tokenizer on the <strong>TinyStories</strong> dataset and a subset of <strong>OpenWebText</strong>.</li>
 </ul>
 
@@ -55,9 +57,9 @@ Hello there!! I am a pre-final year BTech CSE student interested in <strong>AI s
 
 <h3>Interview Simulator</h3>
 <ul>
-<li>Fine-tuned a <strong>SmolLM-3B</strong> model using <strong>QLoRA</strong> on a single Tesla-T4 GPU.</li>
-<li>Processed mock interview data from YouTube using FFMPEG and augmented samples with the Gemini API.</li>
-<li>Successfully deployed fine-tuned weights to Hugging Face for community use.</li>
+[cite_start]<li>Fine-tuned a <strong>SmolLM-3B</strong> model using <strong>QLoRA</strong> on a single Tesla-T4 GPU. [cite: 1]</li>
+[cite_start]<li>Processed mock interview data from YouTube using FFMPEG and augmented samples with the Gemini API. [cite: 1]</li>
+[cite_start]<li>Successfully deployed fine-tuned weights to Hugging Face for community use. [cite: 1]</li>
 </ul>
 
 </div>
@@ -68,8 +70,8 @@ Hello there!! I am a pre-final year BTech CSE student interested in <strong>AI s
 
 <p><strong>Aeon-Toolkit</strong></p>
 <ul>
-<li>Implemented the <code>Series2Series Forecasting</code> mixin class.</li>
-<li>Developed a <code>LinearForecaster</code> algorithm using an MLP network via the Keras library.</li>
+[cite_start]<li>Implemented the <code>Series2Series Forecasting</code> mixin class. [cite: 1]</li>
+[cite_start]<li>Developed a <code>LinearForecaster</code> algorithm using an MLP network via the Keras library. [cite: 1]</li>
 </ul>
 
 </div>
@@ -80,12 +82,12 @@ Hello there!! I am a pre-final year BTech CSE student interested in <strong>AI s
 
 <p>
 <strong>Maharaja Surajmal Institute of Technology (GGSIPU)</strong><br>
-BTech in Computer Science | 2023 - 2027
+BTech in Computer Science | [cite_start]2023 - 2027 [cite: 1]
 </p>
 
 <p>
 <strong>Lal Bahadur Shastri School</strong><br>
-Grade 12th | 2021 - 2022
+Grade 12th | [cite_start]2021 - 2022 [cite: 1]
 </p>
 
 </div>
