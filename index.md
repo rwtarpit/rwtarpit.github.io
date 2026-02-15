@@ -25,7 +25,7 @@ title: About Me
 <div style="background:#f9fafb; padding:1.8rem; border-radius:14px; margin-bottom:2.5rem; text-align: justify;">
 
 <p>
-Hello there!! I am a pre-final year BTech CSE student interested in <strong>AI systems and architecture</strong>, GPUs, optimizations, and High-Performance Computing (HPC). I am currently exploring open-source codebases, NLP architectures, and the latest research breakthroughs in the field.
+Hello there!! I am a pre-final year BTech CSE student interested in AI architectures and systems that work on scale. I am learning about optimizations and high performance computing, and CUDA.
 </p>
 
 </div>
