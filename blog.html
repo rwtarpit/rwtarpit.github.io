@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>blog — ~/portfolio</title>
+<meta name="description" content="Notes on inference optimization, kernel writing, and systems-level ML.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<canvas id="rain" aria-hidden="true"></canvas>
+
+<header class="statusbar">
+  <div class="left">
+    <span class="dot" aria-hidden="true"></span>
+    <span>status: online</span>
+  </div>
+  <nav aria-label="Primary">
+    <ul class="tabs">
+      <li><a href="index.html">home</a></li>
+      <li><a href="blog.html" class="active">blog</a></li>
+      <li><a href="oss.html">oss contributions</a></li>
+    </ul>
+  </nav>
+  <div class="clock" id="clock" aria-live="off"></div>
+</header>
+
+<main id="main">
+
+  <div class="page-header">
+    <div class="breadcrumb"><a href="index.html">~</a> / blog</div>
+    <h1>ls ./blog/posts</h1>
+    <p class="sub">Write-ups on inference optimization, kernel internals, and the systems layer underneath the models. Field notes, not tutorials.</p>
+  </div>
+
+  <section style="border-top:none; padding-top:0;">
+    <div class="filter-row" id="filter-row" aria-label="Filter posts by tag">
+      <button class="filter-chip active" data-tag="all">all</button>
+    </div>
+
+    <div id="post-list" class="post-list" aria-live="polite">
+      <div class="empty-state">loading posts…</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="links">
+      <a href="https://github.com/" target="_blank" rel="noopener">github</a>
+      <a href="https://linkedin.com/" target="_blank" rel="noopener">linkedin</a>
+      <a href="mailto:you@example.com">mail</a>
+      <a href="https://twitter.com/" target="_blank" rel="noopener">x/twitter</a>
+    </div>
+    <div class="copyright">$ echo "© <span id="year"></span> — built with too much time and not enough sleep"</div>
+  </div>
+</footer>
+
+<script src="assets/js/rain.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var listEl = document.getElementById('post-list');
+  var filterRow = document.getElementById('filter-row');
+  var allPosts = [];
+  var activeTag = 'all';
+
+  function fmtDate(iso){
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'2-digit' });
+  }
+
+  function render(){
+    var filtered = activeTag === 'all'
+      ? allPosts
+      : allPosts.filter(function(p){ return (p.tags||[]).indexOf(activeTag) !== -1; });
+
+    if (filtered.length === 0){
+      listEl.innerHTML = '<div class="empty-state">no posts tagged "' + activeTag + '" yet.</div>';
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(function(p){
+      var tags = (p.tags||[]).map(function(t){ return '<span class="tag-pill">#'+t+'</span>'; }).join('');
+      return (
+        '<a class="post-row" href="' + p.slug + '">' +
+          '<div class="meta-line">' +
+            '<span class="date">' + fmtDate(p.date) + '</span>' +
+            '<h3>' + p.title + '</h3>' +
+          '</div>' +
+          '<p class="excerpt">' + p.excerpt + '</p>' +
+          (tags ? '<div class="tags">' + tags + '</div>' : '') +
+        '</a>'
+      );
+    }).join('');
+  }
+
+  function buildFilters(){
+    var tagSet = {};
+    allPosts.forEach(function(p){ (p.tags||[]).forEach(function(t){ tagSet[t] = true; }); });
+    var tags = Object.keys(tagSet).sort();
+
+    tags.forEach(function(t){
+      var btn = document.createElement('button');
+      btn.className = 'filter-chip';
+      btn.setAttribute('data-tag', t);
+      btn.textContent = t;
+      filterRow.appendChild(btn);
+    });
+
+    filterRow.addEventListener('click', function(e){
+      var btn = e.target.closest('.filter-chip');
+      if (!btn) return;
+      Array.from(filterRow.children).forEach(function(c){ c.classList.remove('active'); });
+      btn.classList.add('active');
+      activeTag = btn.getAttribute('data-tag');
+      render();
+    });
+  }
+
+  fetch('data/posts.json')
+    .then(function(res){
+      if (!res.ok) throw new Error('failed to load posts.json');
+      return res.json();
+    })
+    .then(function(posts){
+      allPosts = posts.slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+      buildFilters();
+      render();
+    })
+    .catch(function(err){
+      listEl.innerHTML = '<div class="empty-state">could not load posts.json — if you opened this file directly ' +
+        '(file://), fetch() is blocked by the browser. Run a local server, e.g. <code>python3 -m http.server</code>, ' +
+        'and open via http://localhost:8000/blog.html instead.</div>';
+      console.error(err);
+    });
+})();
+</script>
+</body>
+</html>
