@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why your KV cache is the actual bottleneck — blog</title>
+<meta name="description" content="Everyone tunes batch size first. Here's how to tell when paging, not compute, is what's throttling your inference server.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<canvas id="rain" aria-hidden="true"></canvas>
+
+<header class="statusbar">
+  <div class="left">
+    <span class="dot" aria-hidden="true"></span>
+    <span>status: online</span>
+  </div>
+  <nav aria-label="Primary">
+    <ul class="tabs">
+      <li><a href="../../index.html">home</a></li>
+      <li><a href="../../blog.html" class="active">blog</a></li>
+      <li><a href="../../oss.html">oss contributions</a></li>
+    </ul>
+  </nav>
+  <div class="clock" id="clock" aria-live="off"></div>
+</header>
+
+<main id="main">
+
+  <div class="page-header">
+    <div class="breadcrumb"><a href="../../index.html">~</a> / <a href="../../blog.html">blog</a> / kv-cache-bottleneck</div>
+    <h1>cat kv-cache-bottleneck.md</h1>
+  </div>
+
+  <section style="border-top:none; padding-top:0;">
+    <div class="article-meta">
+      <span>2026-07-10</span>
+      <span>#inference</span>
+      <span>#memory</span>
+      <span>~6 min read</span>
+    </div>
+
+    <article class="post-content">
+      <p>When an inference server feels slow, the first instinct is almost always to raise the batch size. Sometimes that helps. Often it does nothing, or makes things worse — because the server was never compute-bound to begin with. It was memory-bound, and the memory in question is the KV cache.</p>
+
+      <h2>What the KV cache actually costs</h2>
+      <p>Every token generated adds a new key and value vector, per layer, per attention head, that has to stay resident for the lifetime of the sequence. For a mid-size model with a few dozen layers and a handful of billion parameters, that's easily tens of kilobytes of cache per token. Multiply by a few thousand tokens of context, times however many sequences you're serving concurrently, and the cache footprint dwarfs the model weights themselves.</p>
+      <p>This is the part that doesn't show up in a naive throughput benchmark run at batch size one. It only shows up once you're serving real traffic with long, variable-length contexts — which is exactly when people start asking why GPU utilization looks fine but latency is climbing anyway.</p>
+
+      <h2>Fragmentation, not just size</h2>
+      <p>The more subtle failure mode isn't raw cache size, it's fragmentation. Naive implementations allocate one contiguous block per sequence, sized for the maximum possible length. Short sequences waste the unused tail; finished sequences leave holes that don't get reused cleanly. The result is a GPU that reports plenty of free memory in aggregate while simultaneously rejecting new requests because no single contiguous block is large enough.</p>
+      <p>This is the exact problem paged attention was built to solve: treat the KV cache like virtual memory, allocate it in fixed-size blocks, and let a page table stitch blocks together per sequence instead of requiring contiguity. It trades a small amount of indirection overhead for the ability to pack memory far more tightly — which in practice is a very good trade.</p>
+
+      <h2>How to actually tell which one you have</h2>
+      <p>Before reaching for a bigger batch size or a fancier scheduler, it's worth separating the two failure modes:</p>
+      <ul>
+        <li>Watch GPU memory <em>and</em> request queue length together. If memory is near-saturated while requests queue up, you're cache-bound, not compute-bound.</li>
+        <li>Compare throughput at fixed batch size across short vs. long average context lengths. If throughput collapses as context grows even though compute per token barely changed, that's cache pressure, not FLOPs.</li>
+        <li>Log allocation failures, not just OOMs. A server that's silently falling back to smaller batches because it can't find contiguous space is a fragmentation problem wearing a throughput problem's clothes.</li>
+      </ul>
+
+      <h2>The practical takeaway</h2>
+      <p>Batch size is a lever on compute. Once your workload has any meaningful spread in context length, memory layout becomes the lever that actually matters. Reach for paging and better cache eviction policies before reaching for more GPUs — it's usually the cheaper fix, and it's the one that actually addresses what's throttling you.</p>
+
+      <blockquote>This is a template post — replace this content with your own write-up. The structure (h2/h3 headings, code blocks, blockquotes) is already styled, so you can focus on writing.</blockquote>
+    </article>
+
+    <div class="post-nav">
+      <a href="../../blog.html">← back to all posts</a>
+      <a href="../../index.html">home →</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="links">
+      <a href="https://github.com/" target="_blank" rel="noopener">github</a>
+      <a href="https://linkedin.com/" target="_blank" rel="noopener">linkedin</a>
+      <a href="mailto:you@example.com">mail</a>
+      <a href="https://twitter.com/" target="_blank" rel="noopener">x/twitter</a>
+    </div>
+    <div class="copyright">$ echo "© <span id="year"></span> — built with too much time and not enough sleep"</div>
+  </div>
+</footer>
+
+<script src="../../assets/js/rain.js"></script>
+<script src="../../assets/js/chrome.js"></script>
+</body>
+</html>
