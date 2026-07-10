@@ -1,0 +1,35 @@
+[
+  {
+    "repo": "vllm-project/vllm",
+    "repo_url": "https://github.com/vllm-project/vllm",
+    "title": "Fix KV cache fragmentation under long-context batches",
+    "pr_url": "https://github.com/vllm-project/vllm",
+    "status": "merged",
+    "date": "2026-06-02",
+    "additions": 214,
+    "deletions": 58,
+    "tags": ["kernels", "memory"]
+  },
+  {
+    "repo": "pytorch/pytorch",
+    "repo_url": "https://github.com/pytorch/pytorch",
+    "title": "Improve fused attention kernel dispatch for long sequences",
+    "pr_url": "https://github.com/pytorch/pytorch",
+    "status": "review",
+    "date": "2026-05-14",
+    "additions": 96,
+    "deletions": 12,
+    "tags": ["cuda", "attention"]
+  },
+  {
+    "repo": "triton-lang/triton",
+    "repo_url": "https://github.com/triton-lang/triton",
+    "title": "Add autotune config for grouped-query attention",
+    "pr_url": "https://github.com/triton-lang/triton",
+    "status": "open",
+    "date": "2026-04-28",
+    "additions": 41,
+    "deletions": 3,
+    "tags": ["kernels", "autotune"]
+  }
+]
