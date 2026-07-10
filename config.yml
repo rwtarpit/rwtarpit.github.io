@@ -1,8 +1,163 @@
-title: Your Name Portfolio
-description: Resume and Technical Blog
-theme: minima  # This is a clean, default GitHub theme
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>oss contributions — ~/portfolio</title>
+<meta name="description" content="Pull requests and projects across the inference and systems ecosystem.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
 
-# This allows your blog posts to be found by the "for" loop in blog.md
-collections:
-  posts:
-    output: true
+<canvas id="rain" aria-hidden="true"></canvas>
+
+<header class="statusbar">
+  <div class="left">
+    <span class="dot" aria-hidden="true"></span>
+    <span>status: online</span>
+  </div>
+  <nav aria-label="Primary">
+    <ul class="tabs">
+      <li><a href="index.html">home</a></li>
+      <li><a href="blog.html">blog</a></li>
+      <li><a href="oss.html" class="active">oss contributions</a></li>
+    </ul>
+  </nav>
+  <div class="clock" id="clock" aria-live="off"></div>
+</header>
+
+<main id="main">
+
+  <div class="page-header">
+    <div class="breadcrumb"><a href="index.html">~</a> / oss-contributions</div>
+    <h1>git log --author=me --all-repos</h1>
+    <p class="sub">Pull requests and issues across the inference and systems ecosystem — what got merged, what's in review, and why it mattered.</p>
+  </div>
+
+  <section style="border-top:none; padding-top:0;">
+    <div class="stat-row" id="stat-row" aria-label="Contribution summary">
+      <div class="stat-box"><div class="num" id="stat-merged">–</div><div class="label">merged PRs</div></div>
+      <div class="stat-box"><div class="num" id="stat-open">–</div><div class="label">open / in review</div></div>
+      <div class="stat-box"><div class="num" id="stat-repos">–</div><div class="label">repos touched</div></div>
+    </div>
+
+    <div class="filter-row" id="filter-row" aria-label="Filter by status">
+      <button class="filter-chip active" data-status="all">all</button>
+      <button class="filter-chip" data-status="merged">merged</button>
+      <button class="filter-chip" data-status="review">in review</button>
+      <button class="filter-chip" data-status="open">open</button>
+    </div>
+
+    <div id="commit-log" class="commit-log" aria-live="polite">
+      <div class="empty-state">loading contributions…</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="links">
+      <a href="https://github.com/" target="_blank" rel="noopener">github</a>
+      <a href="https://linkedin.com/" target="_blank" rel="noopener">linkedin</a>
+      <a href="mailto:you@example.com">mail</a>
+      <a href="https://twitter.com/" target="_blank" rel="noopener">x/twitter</a>
+    </div>
+    <div class="copyright">$ echo "© <span id="year"></span> — built with too much time and not enough sleep"</div>
+  </div>
+</footer>
+
+<script src="assets/js/rain.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var logEl = document.getElementById('commit-log');
+  var filterRow = document.getElementById('filter-row');
+  var allItems = [];
+  var activeStatus = 'all';
+
+  function fmtDate(iso){
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'2-digit' });
+  }
+
+  function statusLabel(s){
+    if (s === 'merged') return 'merged';
+    if (s === 'review') return 'in review';
+    return 'open';
+  }
+
+  function render(){
+    var filtered = activeStatus === 'all'
+      ? allItems
+      : allItems.filter(function(i){ return i.status === activeStatus; });
+
+    if (filtered.length === 0){
+      logEl.innerHTML = '<div class="empty-state">nothing in this filter yet.</div>';
+      return;
+    }
+
+    logEl.innerHTML = filtered.map(function(i){
+      var tags = (i.tags||[]).map(function(t){ return '<span class="tag-pill">#'+t+'</span>'; }).join('');
+      return (
+        '<article class="commit">' +
+          '<div class="repo-line">' +
+            '<a class="repo" href="' + i.repo_url + '" target="_blank" rel="noopener">' + i.repo + '</a>' +
+            '<span class="status-pill ' + i.status + '">' + statusLabel(i.status) + '</span>' +
+          '</div>' +
+          '<p class="desc">' + i.title + '</p>' +
+          '<div class="commit-meta">' +
+            '<span>' + fmtDate(i.date) + '</span>' +
+            '<span class="diffstat"><span class="add">+' + i.additions + '</span> <span class="rem">−' + i.deletions + '</span></span>' +
+            '<a href="' + i.pr_url + '" target="_blank" rel="noopener">view →</a>' +
+          '</div>' +
+          (tags ? '<div class="tags" style="margin-top:.6rem;">' + tags + '</div>' : '') +
+        '</article>'
+      );
+    }).join('');
+  }
+
+  function renderStats(){
+    var merged = allItems.filter(function(i){ return i.status === 'merged'; }).length;
+    var open = allItems.filter(function(i){ return i.status !== 'merged'; }).length;
+    var repos = new Set(allItems.map(function(i){ return i.repo; })).size;
+    document.getElementById('stat-merged').textContent = merged;
+    document.getElementById('stat-open').textContent = open;
+    document.getElementById('stat-repos').textContent = repos;
+  }
+
+  filterRow.addEventListener('click', function(e){
+    var btn = e.target.closest('.filter-chip');
+    if (!btn) return;
+    Array.from(filterRow.children).forEach(function(c){ c.classList.remove('active'); });
+    btn.classList.add('active');
+    activeStatus = btn.getAttribute('data-status');
+    render();
+  });
+
+  fetch('data/oss.json')
+    .then(function(res){
+      if (!res.ok) throw new Error('failed to load oss.json');
+      return res.json();
+    })
+    .then(function(items){
+      allItems = items.slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+      renderStats();
+      render();
+    })
+    .catch(function(err){
+      logEl.innerHTML = '<div class="empty-state">could not load oss.json — if you opened this file directly ' +
+        '(file://), fetch() is blocked by the browser. Run a local server, e.g. <code>python3 -m http.server</code>, ' +
+        'and open via http://localhost:8000/oss.html instead.</div>';
+      console.error(err);
+    });
+})();
+</script>
+</body>
+</html>
