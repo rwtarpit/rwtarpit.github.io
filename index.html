@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>~/portfolio — systems engineer</title>
+<meta name="description" content="Portfolio of an ML systems engineer working on kernels, inference, and distributed infra.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050805;
+    --bg-alt:#0a120b;
+    --panel:#0b1510;
+    --green:#3dff9a;
+    --green-bright:#8dffc4;
+    --green-dim:#1c7a4a;
+    --green-deep:#0e3324;
+    --amber:#ffcb6b;
+    --red:#ff5f5f;
+    --text:#c9f5da;
+    --text-dim:#5f8770;
+    --border:#153826;
+    --mono:'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--mono);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  ::selection{ background:var(--green-dim); color:#03110a; }
+
+  a{ color:inherit; }
+
+  #rain{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    opacity:0.16;
+    pointer-events:none;
+  }
+
+  .skip-link{
+    position:absolute; left:-9999px; top:0;
+    background:var(--panel); color:var(--green); padding:.6rem 1rem;
+    z-index:999; border:1px solid var(--green-dim);
+  }
+  .skip-link:focus{ left:1rem; top:1rem; }
+
+  a:focus-visible, button:focus-visible, input:focus-visible{
+    outline:2px solid var(--green);
+    outline-offset:2px;
+  }
+
+  /* ---------- status bar / nav ---------- */
+  .statusbar{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:.7rem 1.25rem;
+    background:rgba(5,8,5,0.88);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border);
+    font-size:.8rem;
+  }
+  .statusbar .left{ display:flex; align-items:center; gap:.6rem; color:var(--text-dim); }
+  .statusbar .dot{ width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+  .tabs{ display:flex; gap:2px; list-style:none; margin:0; padding:0; }
+  .tabs li a{
+    display:block;
+    padding:.45rem 1rem;
+    text-decoration:none;
+    color:var(--text-dim);
+    border:1px solid transparent;
+    font-size:.82rem;
+    transition:color .15s, border-color .15s, background .15s;
+  }
+  .tabs li a::before{ content:"["; color:var(--green-dim); }
+  .tabs li a::after{ content:"]"; color:var(--green-dim); }
+  .tabs li a:hover, .tabs li a.active{
+    color:var(--green-bright);
+    background:var(--green-deep);
+    border-color:var(--green-dim);
+  }
+
+  .statusbar .clock{ color:var(--text-dim); }
+
+  main{ position:relative; z-index:1; max-width:920px; margin:0 auto; padding:0 1.25rem; }
+
+  /* ---------- hero / terminal ---------- */
+  .hero{ padding:3.5rem 0 2rem; }
+
+  .window{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    box-shadow:0 0 0 1px rgba(61,255,154,.04), 0 20px 60px rgba(0,0,0,.6);
+    overflow:hidden;
+  }
+  .window-bar{
+    display:flex; align-items:center; gap:.5rem;
+    padding:.6rem .8rem;
+    background:var(--bg-alt);
+    border-bottom:1px solid var(--border);
+  }
+  .window-bar .traffic{ width:10px; height:10px; border-radius:50%; }
+  .traffic.r{ background:#ff5f56; }
+  .traffic.y{ background:#ffbd2e; }
+  .traffic.g{ background:#27c93f; }
+  .window-bar .title{ margin-left:.5rem; color:var(--text-dim); font-size:.75rem; }
+
+  .window-body{ padding:1.1rem 1.2rem 1.4rem; font-size:.86rem; min-height:280px; }
+  .boot-line{ white-space:pre-wrap; word-break:break-word; }
+  .boot-line .ok{ color:var(--green); }
+  .boot-line .path{ color:var(--amber); }
+  .boot-line .dim{ color:var(--text-dim); }
+
+  .prompt-row{ display:flex; gap:.5rem; align-items:baseline; flex-wrap:wrap; }
+  .prompt-row .ps{ color:var(--green-bright); white-space:nowrap; }
+  .prompt-row .ps .path{ color:var(--amber); }
+
+  #term-output{ margin-top:.3rem; }
+  #term-output p{ margin:.15rem 0; }
+  #term-output .cmd-echo{ color:var(--green-bright); }
+  #term-output .cmd-echo::before{ content:"guest@portfolio:~$ "; color:var(--green-bright); opacity:.8; }
+  #term-output .err{ color:var(--red); }
+  #term-output .heading{ color:var(--amber); }
+
+  #term-form{ display:flex; align-items:baseline; gap:.5rem; margin-top:.4rem; }
+  #term-input{
+    flex:1;
+    background:transparent;
+    border:none;
+    color:var(--green-bright);
+    font-family:var(--mono);
+    font-size:.86rem;
+    caret-color:var(--green);
+  }
+  #term-input::placeholder{ color:var(--text-dim); }
+
+  .hint{ margin-top:.9rem; font-size:.72rem; color:var(--text-dim); }
+  .hint kbd{ border:1px solid var(--border); border-radius:3px; padding:0 .3rem; color:var(--green); }
+
+  /* ---------- section framing ---------- */
+  section{ padding:3rem 0; border-top:1px dashed var(--border); }
+  .section-head{ display:flex; align-items:baseline; gap:.6rem; margin-bottom:1.4rem; }
+  .section-head .tag{ color:var(--green-dim); font-size:.78rem; }
+  .section-head h2{
+    margin:0; font-size:1.05rem; font-weight:600;
+    color:var(--green-bright); letter-spacing:.02em;
+  }
+  .section-head h2::before{ content:"// "; color:var(--green-dim); }
+
+  /* ---------- about ---------- */
+  .about-grid{ display:grid; grid-template-columns: 1.1fr 1fr; gap:2rem; align-items:start; }
+  @media (max-width:720px){ .about-grid{ grid-template-columns:1fr; } }
+
+  .bio p{ margin:0 0 .9rem; color:var(--text); font-size:.92rem; }
+  .bio .var{ color:var(--amber); }
+  .bio .str{ color:var(--green-bright); }
+  .bio .comment{ color:var(--text-dim); }
+
+  .status-list{ list-style:none; margin:0; padding:0; border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+  .status-list li{
+    display:flex; justify-content:space-between; gap:1rem;
+    padding:.55rem .8rem;
+    font-size:.78rem;
+    border-bottom:1px solid var(--border);
+    background:var(--panel);
+  }
+  .status-list li:last-child{ border-bottom:none; }
+  .status-list .svc{ color:var(--text); }
+  .status-list .svc small{ display:block; color:var(--text-dim); font-size:.7rem; margin-top:.15rem; }
+  .status-list .state{ color:var(--green); white-space:nowrap; font-size:.72rem; }
+  .status-list .state::before{ content:"● "; }
+
+  /* ---------- nav cards (blog / oss) ---------- */
+  .card-grid{ display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; }
+  @media (max-width:720px){ .card-grid{ grid-template-columns:1fr; } }
+
+  .nav-card{
+    display:block;
+    text-decoration:none;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:1.2rem 1.2rem 1.4rem;
+    background:linear-gradient(180deg, var(--panel), var(--bg-alt));
+    transition:border-color .15s, transform .15s, box-shadow .15s;
+    position:relative;
+    overflow:hidden;
+  }
+  .nav-card::before{
+    content:"";
+    position:absolute; inset:0;
+    background:radial-gradient(circle at 0% 0%, rgba(61,255,154,.08), transparent 60%);
+    opacity:0; transition:opacity .2s;
+  }
+  .nav-card:hover, .nav-card:focus-visible{
+    border-color:var(--green-dim);
+    transform:translateY(-2px);
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+  }
+  .nav-card:hover::before, .nav-card:focus-visible::before{ opacity:1; }
+  .nav-card .path{ color:var(--green-dim); font-size:.72rem; margin-bottom:.5rem; }
+  .nav-card h3{ margin:0 0 .5rem; color:var(--green-bright); font-size:1rem; }
+  .nav-card p{ margin:0; color:var(--text-dim); font-size:.82rem; }
+  .nav-card .go{ display:inline-block; margin-top:.8rem; font-size:.76rem; color:var(--amber); }
+
+  /* ---------- footer ---------- */
+  footer{ padding:2.5rem 0 3rem; border-top:1px dashed var(--border); font-size:.8rem; color:var(--text-dim); }
+  .links{ display:flex; flex-wrap:wrap; gap:.4rem 1.1rem; margin-bottom:1rem; }
+  .links a{ text-decoration:none; color:var(--text); }
+  .links a:hover{ color:var(--green-bright); }
+  .links a::before{ content:"$ open "; color:var(--green-dim); }
+  footer .copyright{ color:var(--text-dim); font-size:.72rem; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<canvas id="rain" aria-hidden="true"></canvas>
+
+<header class="statusbar">
+  <div class="left">
+    <span class="dot" aria-hidden="true"></span>
+    <span>status: online</span>
+  </div>
+  <nav aria-label="Primary">
+    <ul class="tabs">
+      <li><a href="index.html" class="active">home</a></li>
+      <li><a href="blog.html">blog</a></li>
+      <li><a href="oss.html">oss contributions</a></li>
+    </ul>
+  </nav>
+  <div class="clock" id="clock" aria-live="off"></div>
+</header>
+
+<main id="main">
+
+  <section class="hero">
+    <div class="window">
+      <div class="window-bar">
+        <span class="traffic r"></span>
+        <span class="traffic y"></span>
+        <span class="traffic g"></span>
+        <span class="title">guest@portfolio: ~</span>
+      </div>
+      <div class="window-body">
+        <div id="boot-sequence"></div>
+
+        <div id="term-output"></div>
+
+        <form id="term-form" aria-label="Interactive terminal">
+          <span class="ps">guest@portfolio<span class="path">:~</span>$</span>
+          <input id="term-input" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="type a command…" aria-label="Terminal command input">
+        </form>
+
+        <p class="hint">try <kbd>whoami</kbd>, <kbd>skills</kbd>, <kbd>help</kbd> — or just wait for the boot log</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="section-head">
+      <span class="tag">01</span>
+      <h2>about</h2>
+    </div>
+    <div class="about-grid">
+      <div class="bio">
+        <p><span class="var">role</span> = <span class="str">"ML Systems Engineer"</span> <span class="comment">// kernels, inference, infra</span></p>
+        <p>I work underneath the models — writing the kernels, schedulers, and serving layers that decide whether a forward pass takes 40ms or 400ms. Most of my time goes into inference engines, GPU memory management, and distributed execution: the kind of problems that show up when you try to serve a model at scale instead of just running it once in a notebook.</p>
+        <p>Think along the lines of what <span class="str">vLLM</span> does — continuous batching, paged attention, kernel fusion, tensor/pipeline parallelism — that's the layer I live in. I like systems that are measured in milliseconds and megabytes, not epochs.</p>
+        <p class="comment">// currently poking at scheduler heuristics and custom CUDA kernels for long-context inference.</p>
+      </div>
+
+      <ul class="status-list" aria-label="Areas of focus">
+        <li><span class="svc">cuda-kernels.service<small>fused attention, custom ops</small></span><span class="state">active</span></li>
+        <li><span class="svc">inference-serving.service<small>batching, scheduling, KV cache</small></span><span class="state">active</span></li>
+        <li><span class="svc">distributed-training.service<small>tensor / pipeline parallelism</small></span><span class="state">active</span></li>
+        <li><span class="svc">memory-management.service<small>paging, quantization</small></span><span class="state">active</span></li>
+        <li><span class="svc">model-architectures.service<small>attention variants, MoE</small></span><span class="state">active</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="explore">
+    <div class="section-head">
+      <span class="tag">02</span>
+      <h2>explore</h2>
+    </div>
+    <div class="card-grid">
+      <a class="nav-card" href="blog.html">
+        <div class="path">~/blog</div>
+        <h3>Blog</h3>
+        <p>Notes on inference optimization, kernel writing, and systems-level ML — write-ups from the trenches, not tutorials.</p>
+        <span class="go">cd ./blog →</span>
+      </a>
+      <a class="nav-card" href="oss.html">
+        <div class="path">~/oss-contributions</div>
+        <h3>OSS Contributions</h3>
+        <p>Pull requests, issues, and projects across the inference and systems ecosystem — what got merged and why it mattered.</p>
+        <span class="go">cd ./oss →</span>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <main style="max-width:920px; margin:0 auto; padding:0 1.25rem;">
+    <div class="links">
+      <a href="https://github.com/" target="_blank" rel="noopener">github</a>
+      <a href="https://linkedin.com/" target="_blank" rel="noopener">linkedin</a>
+      <a href="mailto:you@example.com">mail</a>
+      <a href="https://twitter.com/" target="_blank" rel="noopener">x/twitter</a>
+    </div>
+    <div class="copyright">$ echo "© <span id="year"></span> — built with too much time and not enough sleep"</div>
+  </main>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  /* ---------- clock ---------- */
+  var clockEl = document.getElementById('clock');
+  function tick(){
+    var d = new Date();
+    var hh = String(d.getHours()).padStart(2,'0');
+    var mm = String(d.getMinutes()).padStart(2,'0');
+    var ss = String(d.getSeconds()).padStart(2,'0');
+    clockEl.textContent = hh+':'+mm+':'+ss;
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* ---------- matrix rain ---------- */
+  var canvas = document.getElementById('rain');
+  var ctx = canvas.getContext('2d');
+  var W, H, cols, drops;
+  var chars = "01アイウエオカキクケコサシスセソ日ノハヒフ<>{}[]/*+=;:";
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    var fontSize = 15;
+    cols = Math.floor(W / fontSize);
+    drops = new Array(cols).fill(0).map(function(){ return Math.random() * -40; });
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  var fontSize = 15;
+  function drawRain(){
+    ctx.fillStyle = 'rgba(5,8,5,0.08)';
+    ctx.fillRect(0,0,W,H);
+    ctx.font = fontSize + 'px monospace';
+    for (var i=0; i<cols; i++){
+      var text = chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillStyle = Math.random() > 0.985 ? '#8dffc4' : 'rgba(61,255,154,0.55)';
+      ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+      if (drops[i]*fontSize > H && Math.random() > 0.975){ drops[i] = 0; }
+      drops[i]++;
+    }
+  }
+
+  if (!reduceMotion){
+    setInterval(drawRain, 55);
+  } else {
+    ctx.fillStyle = '#050805';
+    ctx.fillRect(0,0,W,H);
+  }
+
+  /* ---------- boot sequence ---------- */
+  var bootLines = [
+    { text: "$ ssh guest@portfolio.dev", cls: "" },
+    { text: "Last login: " + new Date().toDateString() + " from 127.0.0.1", cls: "dim" },
+    { text: "Initializing profile...", cls: "dim" },
+    { text: "[OK] loading kernels", cls: "ok" },
+    { text: "[OK] mounting /dev/gpu0", cls: "ok" },
+    { text: "[OK] starting inference-engine.service", cls: "ok" },
+    { text: "[OK] starting scheduler.service", cls: "ok" },
+    { text: "profile ready.", cls: "" }
+  ];
+
+  var bootEl = document.getElementById('boot-sequence');
+
+  function typeLine(lineObj, done){
+    var p = document.createElement('div');
+    p.className = 'boot-line ' + (lineObj.cls || '');
+    bootEl.appendChild(p);
+    if (reduceMotion){
+      p.textContent = lineObj.text;
+      done();
+      return;
+    }
+    var i = 0;
+    var text = lineObj.text;
+    var speed = 12;
+    (function step(){
+      p.textContent = text.slice(0, i);
+      i++;
+      if (i <= text.length){
+        setTimeout(step, speed);
+      } else {
+        done();
+      }
+    })();
+  }
+
+  function runBoot(idx){
+    if (idx >= bootLines.length){
+      termInput.focus();
+      return;
+    }
+    typeLine(bootLines[idx], function(){
+      setTimeout(function(){ runBoot(idx+1); }, reduceMotion ? 0 : 90);
+    });
+  }
+  runBoot(0);
+
+  /* ---------- interactive terminal ---------- */
+  var form = document.getElementById('term-form');
+  var termInput = document.getElementById('term-input');
+  var output = document.getElementById('term-output');
+
+  var commands = {
+    help: function(){
+      return [
+        "available commands:",
+        "  whoami        — who runs this terminal",
+        "  skills        — core focus areas",
+        "  about         — jump to the about section",
+        "  blog          — go to the blog",
+        "  oss           — go to oss contributions",
+        "  contact       — how to reach me",
+        "  clear         — clear this terminal",
+        "  sudo make me a sandwich"
+      ].join("\n");
+    },
+    whoami: function(){
+      return "an ML systems engineer who spends most days closer to CUDA than to a Jupyter notebook.";
+    },
+    skills: function(){
+      return [
+        "cuda-kernels          fused attention, custom ops",
+        "inference-serving      batching, scheduling, kv-cache",
+        "distributed-training   tensor / pipeline parallelism",
+        "memory-management      paging, quantization",
+        "model-architectures    attention variants, moe"
+      ].join("\n");
+    },
+    about: function(){ location.hash = '#about'; return "jumping to #about"; },
+    blog: function(){ setTimeout(function(){ location.href = 'blog.html'; }, 400); return "cd ./blog ..."; },
+    oss: function(){ setTimeout(function(){ location.href = 'oss.html'; }, 400); return "cd ./oss-contributions ..."; },
+    contact: function(){ return "reach me via the links in the footer — github, linkedin, or mail."; },
+    clear: function(){ output.innerHTML = ""; return null; },
+    "sudo make me a sandwich": function(){ return "okay."; },
+    ls: function(){ return "about  blog  oss-contributions  README.md"; },
+    "cat readme.md": function(){ return "a portfolio disguised as a terminal. or the other way around."; }
+  };
+
+  function printLine(text, cls){
+    var p = document.createElement('p');
+    if (cls) p.className = cls;
+    p.textContent = text;
+    output.appendChild(p);
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var raw = termInput.value;
+    var val = raw.trim().toLowerCase();
+    if (!val) return;
+
+    var echo = document.createElement('p');
+    echo.className = 'cmd-echo';
+    echo.textContent = raw;
+    output.appendChild(echo);
+
+    if (val === 'clear'){
+      output.innerHTML = "";
+    } else if (commands.hasOwnProperty(val)){
+      var res = commands[val]();
+      if (res){
+        res.split("\n").forEach(function(line){ printLine(line); });
+      }
+    } else {
+      printLine("command not found: " + raw + "  (try 'help')", "err");
+    }
+
+    termInput.value = "";
+    output.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+  });
+
+  document.addEventListener('click', function(){ termInput.focus(); }, { once:true });
+})();
+</script>
+</body>
+</html>
