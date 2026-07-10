@@ -1,0 +1,9 @@
+[
+  {
+    "title": "Why your KV cache is the actual bottleneck",
+    "date": "2026-07-10",
+    "slug": "blog/posts/2026-07-10-kv-cache-bottleneck.html",
+    "tags": ["inference", "memory"],
+    "excerpt": "Everyone tunes batch size first. That's usually the wrong lever — here's how to tell when paging, not compute, is what's throttling you."
+  }
+]
