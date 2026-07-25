@@ -1,9 +1,9 @@
 [
   {
-    "title": "Why your KV cache is the actual bottleneck",
-    "date": "2026-07-10",
-    "slug": "blog/posts/2026-07-10-kv-cache-bottleneck.html",
-    "tags": ["inference", "memory"],
-    "excerpt": "Everyone tunes batch size first. That's usually the wrong lever — here's how to tell when paging, not compute, is what's throttling you."
+    "title": "beating CuBLAS on A100",
+    "date": "2026-07-25",
+    "slug": "blog/posts/2026-07-25-fp32-gemm-a100.html",
+    "tags": ["cuda", "kernels", "gemm"],
+    "excerpt": "Optimizing an fp32 GEMM kernel on A100 step by step \u2014 tensor cores, swizzling, ldmatrix, and SASS-level tuning \u2014 benchmarked against cuBLAS across seven kernel iterations."
   }
 ]
