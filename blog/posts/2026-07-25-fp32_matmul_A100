@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What is GEMM? — blog</title>
+<meta name="description" content="Optimizing an fp32 GEMM kernel on A100 step by step, from tensor-core basics to swizzling, ldmatrix, and SASS-level tuning, benchmarked against cuBLAS.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<canvas id="rain" aria-hidden="true"></canvas>
+
+<header class="statusbar">
+  <div class="left">
+    <span class="dot" aria-hidden="true"></span>
+    <span>status: online</span>
+  </div>
+  <nav aria-label="Primary">
+    <ul class="tabs">
+      <li><a href="../../index.html">home</a></li>
+      <li><a href="../../blog.html" class="active">blog</a></li>
+      <li><a href="../../oss.html">oss contributions</a></li>
+    </ul>
+  </nav>
+  <div class="clock" id="clock" aria-live="off"></div>
+</header>
+
+<main id="main">
+
+  <div class="page-header">
+    <div class="breadcrumb"><a href="../../index.html">~</a> / <a href="../../blog.html">blog</a> / fp32-gemm-a100</div>
+    <h1>What is GEMM?</h1>
+  </div>
+
+  <section style="border-top:none; padding-top:0;">
+    <div class="article-meta">
+      <span>draft</span>
+      <span>#cuda</span>
+      <span>#kernels</span>
+      <span>#gemm</span>
+    </div>
+
+    <article class="post-content">
+
+      <p>GEMM stands for <strong>General Matrix Multiply</strong>, and it's one of the most important and most studied computational kernels in all of computing. The operation itself is deceptively simple:</p>
+
+      <p class="equation">C = α · (A × B) + β · C</p>
+
+      <p>where A is an M×K matrix, B is a K×N matrix, and C is the resulting M×N matrix. α and β are scalars (usually 1 and 0 in the simplest case, reducing it to plain C = A × B).</p>
+
+      <p>That's it. Three nested loops, if you write it naively:</p>
+
+      <pre><code>for (int i = 0; i &lt; M; i++)
+  for (int j = 0; j &lt; N; j++)
+    for (int k = 0; k &lt; K; k++)
+      C[i][j] += A[i][k] * B[k][j];</code></pre>
+
+      <p>The reason GEMM gets an entire subfield of systems research devoted to it is that this naive version is <em>catastrophically</em> slow on real hardware (often 50-100x slower than a well-tuned implementation on the same chip) for reasons that have nothing to do with FLOPs and everything to do with memory movement. GEMM does O(MNK) arithmetic but only O(MN + NK + MK) memory traffic, which means for large matrices there's an enormous amount of <em>data reuse</em> available: each element of A and B gets read many times across the computation. Whether you actually capture that reuse in registers, in shared memory / cache, across tiles, is almost the entire story of GEMM performance.</p>
+
+      <p>Because it's the arithmetic core of so much numerical software, GEMM has been implemented, re-implemented, and hand-tuned per architecture for decades. BLAS (Basic Linear Algebra Subprograms) standardized the interface back in the 1970s-80s, and essentially every numerical computing platform since — LAPACK, NumPy, MATLAB, PyTorch, TensorFlow — ultimately bottoms out in a call to <em>someone's</em> GEMM implementation. On NVIDIA GPUs, that's cuBLAS (or CUTLASS if you want to write your own variant), which is the reference point this post benchmarks against.</p>
+
+      <p>Now I would be assuming that the readers have some what knowledge of GPU hardware in general and how GEMM is computed on it. For users who are keen to read in depth about GPU architectures and GEMM implementations, I would forward readers to these excellent writeups by Simon boehm and Aleksa Gordic.</p>
+
+      <p>My motivation for this blog was that I have seen lots of public work and writeups about HGEMM (fp16 input tensors) since they are industry standard for AI workloads, and now with fp8 and fp4 variants overtaking too, but I haven't seen a single fp32 GEMM walkthrough on newer architectures. So I decided to figure it out myself and here we are.</p>
+
+      <p>Summary of whats about to come:</p>
+
+      <p>I will optimise the fp32 matmul kernel step by steps using the techniques from the literature and benchmark it againt NVIDIA's hand tuned kernel from their CuBLAS library. Unfortunately, I don't have access to ncu for kernel profiling on A100, but that doesn't stop us from profiling kernel and verifying bottlenecks. I will be using cuda's own <code>clock</code> to measure compute cycles btw ops. We top it off by analysing compiler generated SASS code, that ultimately leads us to final kernel that is hovering around same performance as its CuBLAS counterpart. Also I couldn't find much explainations about SASS, except for official NVIDIA docs mainly, so I will try to cover up my understandings of SASS and intuition leading to changes I did in my kernel to take it past the winning line.</p>
+
+      <h2>Architectural Overview (revamp):</h2>
+
+      <p>Idea is simple, we follow the industry standard for GEMM kernels. We have matrix A and matrix B. we load both in form of tiles and feed them to GPU computing units. Idea behind loading in tiles is to promote massive data reuse during computation by exploiting SMEM, L1 and L2 caches for staging data. We use tensor cores for computing the actual AxB in the only supported ptx instruction for fp32 matmuls in A100 – mma.tf32.16x8x8. tf32 here refers to NVIDIA's special dtype for fp32 workloads (explain tf32).</p>
+
+      <h2>KERNELS:</h2>
+
+      <h3>Kernel 1 (Simon's kernel, CUDA cores replaced with tensor cores):</h3>
+
+      <p>Simon's best kernel (optimised for CUDA cores and consumer hardware before tensor cores arrived – pre volta era) runs at just 15% of what CuBLAS has to offer on an A100.</p>
+
+      <p>In a nutshell, Simon's kernel loads a tile from both matrices, distributes sub tiles to each warp, where each warp further distributes work further. Each thread computes a super small matrix multiplication of its own and keeps accumulating the output in its registers until the CTA processes all the tiles along the Kth dimension to complete its share of final output.</p>
+
+      <p>What changes in A100 are tensor cores, asynchronous data loading, and larger SMEM.</p>
+
+      <p>As this was my first introduction to tensor cores, I was excited to see how much of performance boost can we get by simply replacing cuda cores with tensor cores. So I took Simon's kernel and swapped out cuda with tensor along the cores. I used the high level wmma API here. Only the compute and stores back to GMEM changes and everything stayed the same. This alone doubles the performance and reaches ~33% of CuBLAS. That's enough to answer why tensor cores are called beasts. And now its time to tame the beast, apparently by "feeding the beast" !!</p>
+
+      <h3>Kernel 2 (generalised kernel with swizzling and ptx mma)(gemm_swizzle.cu):</h3>
+
+      <p>This is not the first kernel I am writing following the above, but the first one I am documenting after numerous experiments. I significantly parted way from Simon's kernel and introduced my own warp tiling layout (not the best idea; I spotted and corrected this later). Each CTA works on computing a squarish tile of output. Furthermore, I use 1d warp tiling instead of 2d (the mistake) along the M dimension ie each warp computes a rectangular strip along tile A and loads complete tile B in form of subtiles (rect strips) along the K dimension.</p>
+
+      <p>I also introduce swizzling in this kernel for loading data from GMEM to SMEM and from SMEM to registers before feeding to tensor cores. Swizzling itself would require a section if one needs to understand it, but again in a nutshell the idea is that SMEM, unlike other memories in GPU is stored in 32 banks. If multiple threads try to access same bank at an instance and ask different data, the GPU has to serialize these instructions to avoid race conditions and data curroption. This serial execution of instruction hurts latency, and if 32 threads access same bank at a time, it would be catastrophic for the kernel. To avoid this we want to make sure in every load and store ops from/to SMEM, each thread hits different bank. This can be done by XOR swizzling where for each row in the tile, we shuffle the columns in group of 4 (for float4/128bits single instruction loading). Due to this no two threads when woking on different rows hit the same bank for accessing same columns. For further details, I would like to forward readers to Aleksa Gordic's swizzling section and this write up for Lei Mao [add link]. I picked the generalised <code>swizzle</code> formula from his blog.</p>
+
+      <p>Further instead of using the high level wmma API, I chose to use low level ptx instructions for tensor core matmul to have much more manual control and learn more about its intrinsics. PTX can be termed as IR (intermediate representation) btw CUDA C++ and the aseembly code that runs on hardware. Ptx provides much more control over our actions and intentions, and also some features that it offers are not part of high level api as of now across latest hardware generations.</p>
+
+      <p>For tf32 matmul, sm80(A100) only supports m16n8k8 mma variant, which means at a time tensor core can compute matmul of 16x8 to 8x8 producing 16x8 output matrix. To execute this instruction, tensor cores require data fragments of A(16x8) and B(8x8) in registers of the warp executing the instruction. The accumulator fragments that keep the running matmul output also needs to be in registers of all 32 threads of the warp. Tensor cores expect these fragments to be in a specific layout, otherwise we get wrong output. NVIDIA docs explains this pretty nicely.</p>
+
+      <p>I ran this kernel using 128x16x128 tile sizes per with 128 threads (4 warps) per CTA over 4096^3 matrices.</p>
+
+      <p>So the overview of kernel is as following: each CTA consists of 4 warps and is supposed to compute a 128x128 output tile of C. each warp computes 32x128 of tile C by fixing 32x16 from tile A and then loops over 16x128 strip of tile B. if we zoom more into a single warp, it has to follow strict dimensions required for mma instruction. So that means each warp has to loop over As subtile in form of 4 16x8 tiles and each of those tile further loops over 32 8x8 tiles over 16x128 B tile.</p>
+
+      <p>And as it may seem so obvious now but it wasn't to me back when I wrote the kernel. This kernel has several trivial issues that stops it at only ~43% of CuBLAS. Firstly, a warp has to load the same B subtile from SMEM again and again, each time it iterates over As tile. Secondly the rectangular strip per warp layout is too inefficient for massive data reuse that matmul has to offer. My intuition at this point was to make a generic kernel where I could experiment with tile shapes and threads per CTA.</p>
+
+      <p>I have kept this inefficient kernel here as part of my worklog (I may come back to it in future) and as a caution to what not to do. Or perhaps I am too lazy to correct it here.</p>
+
+      <h3>Kernel 3 (adding async loads and double buffering)(gemm_pipeline.cu):</h3>
+
+      <p>We keep everything the same as previous kernel except for 2 quirks : async loads from global memory to smem using <code>cuda memcpy_async</code> api and a setup for multibuffering pipeline.</p>
+
+      <p>memcpy_async compiles down to cp.async ptx instruction (which we will use later) and it differs significantly from thread based data loading. When loading data from GMEM using threads, each thread has to wait for its requested data to arrive before moving further into next op ie it's a synchronized operation, and before storing data into SMEM it needs to be staged first into thread level registers. A100 solves this by introducing a dedicated hardware for moving data from GMEM to SMEM asynchronously by means of cp.async instruction. This saves both register space and allows thread to proceed further as soon as it passes its instruction to the scheduler.</p>
+
+      <p>Then comes the multi staged pipeline, the idea is that compute is too fast as compared to data loading. It means when tensor cores fininsh computing a tile output, they sit idle while next tiles of data is loaded. This starvation of tensor cores be fed if we can load multiple tiles of each input matrices and keep doing in a loop. we can schedule a tile to be loaded and then start compute on current tile, since cp.async is asynchrounous and GMEM -> SMEM loading is completely hardware independent of tensor core mma, it is a direct feasible path. So I proceed as described. For pipelining, I again use a generic structure to experiment with multiple num_stages instead of hardcoding it at 2 or 3. This touches 50% of CuBLAS performance. At this point I had an intuition that there might have significant overhead to track pipeline variables but I wanted to find best config first before locking it up.</p>
+
+      <h3>Kernel 4(block_out.cu)</h3>
+
+      <p>In this kernel I introcuded two major changes – using remapping the warp layout for better data reuse and ldmatrix for loading tile fragments from SMEM to registers.</p>
+
+      <p>The previously used 1D strip layout for work allocation to warps had major flaws that I discovered when profiling and iterating over previous kernels. Firstly since we were very conservative with resources by using only 128 threads, It means only 4 active warps per SM at a time. Secondly each warp had to load whole tile of B' tile. And lastly the major flaw was almost no data reuse while computing when matmul can inherently provide immense data reuse opportunity. Lets understand the data reuse point with an example:</p>
+
+      <div class="text-box">
+        <p>For a warp computing <strong>64 total output elements</strong>:</p>
+        <ul>
+          <li><strong>1D Rectangular Strip (64 × 1):</strong>
+            <ul>
+              <li>Data loaded: 64 + 1 = 65 elements.</li>
+              <li>Efficiency: 64/65 ≈ <strong>0.98</strong> operations per loaded element.</li>
+            </ul>
+          </li>
+          <li><strong>2D Square Tile (8 × 8):</strong>
+            <ul>
+              <li>Data loaded: 8 + 8 = 16 elements.</li>
+              <li>Efficiency: 64/16 = <strong>4.0</strong> operations per loaded elemen</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <p>Therefore it is always best to allocate squarish output subtile to each warp. As explained, I shifted to 8 warps per CTA, and each warp computes 32x64 output subtile over 256x32x128 input tiles with double buffering pipeline. I derived the constants empirically (that's where the generic implementation helped) and also it was part intuitive for maximum throughput let warp work on bigger tiles and keep the tensor cores busy throughout. Although with this configuration, concurrent CTAs per SM is limited to 1 due to SMEM limitations but it works best for me out of the search space.</p>
+
+      <p>Next up, I introduced ldmatrix, it is a ptx instruction for loading tile fragments from SMEM to registers of all 32 threads in a warp with a single instruction. In A100, ldmatrix instruction is only available for fp16 values that is by packing 2 fp16 values and loading them in a single fp32 register for a thread. But trivially it just loads bits ie fills 32 bits space with 2 16 bit packages by placing them consecutively. It means we can just use it to load 32 consecutive bits on a 32 bit placeholder.</p>
+
+      <p>For this we use <code>ldmatrix.sync.aligned.m8n8.x4.shared.b16</code> ptx instruction since this feature is not available as a high level wrapper or api as per my knowledge. This is one of the reason to use ptx, we can do forbidden things!! Coming back to the instruction, ldmatrix.sync means this is a synchronized instruction ie threads wait for it to complete before moving issuing next. <code>aligned</code> means the provided memory address of smem is 128 bit aligned. Now the main thing is the layout, we are using the m8n8.x4 layout which means we load 4 8x8 tiles from provided addresses, for fp32 that means loading 4 8x4 tiles, and for mma layout requirement of A tile that is exactly what we want. For B tile, unfortunately this instruction isn't more efficient than each thread simply loading 2 floats from smem per mma loop, as values land in different threads than required by mma, and getting them home requires lots of manual matching and warp level shuffles, which ultimately bloats the performance</p>
+
+      <p>Understanding the mma – ldmatrix collaboration is a lengthy topic so, curious readers can read this blog from lei mao and use nvidia docs to connect the dots.</p>
+
+      <p>I also shifted to cuda pipeline from using cuda barriers for less clutter and more intuitive codebase, though the performance change is negligible as they compile down to same instructions.</p>
+
+      <p>I assume there were lot of other minor changes btw these 2 kernels, but the gap and iterations btw both were too many and given how lengthy this writeup already looks, I decided to pile up them in this one.</p>
+
+      <p>This reaches ~80% of cublas. For the folks who are curious about individual feature's performance, I saw around 5-7% for shifting to ldmatrix from manual smem -> register loads, and around 15% when I switched to 2d warp layout (although this comparison was on 128x16x128 tile sizes) and I believe a good chunk of it was also due to using 8 warps instead of 16.</p>
+
+      <h3>Kernel 5 (b_frag_loads.cu)</h3>
+
+      <p>The next kernel has few minor changes and reaches upto ~85% performance. Mainly, we introduce grid swizzling. Its main purpose is to <strong>reorder the sequence in which CTAs execute</strong> toimprove L2 cache reuse. By default CTAs execute in row major order of a grid. In GEMM, we can notice that data is reused in concentrations, ie neighbouring CTAs load the same data across atleast one dimension. In linear scheduling, this data gets thrashed and kicked out of L2 cache to make room for new tiles.</p>
+
+      <p>therefore we swizzle the grid layout and change how CTAs are executed for better L2 cache hitrate and less thrashing. This means now CTAs getting executed on SMs concurrently can fetch reusable data from L2 cache instead of long walk to GMEM. This can be done in just couple of lines of code:</p>
+
+      <pre><code>int linear_id = blockIdx.y * gridDim.x + blockIdx.x;
+const int SWIZZLE_W = 8;
+int tile_col = (linear_id % SWIZZLE_W) + (linear_id / (SWIZZLE_W * gridDim.y)) * SWIZZLE_W;
+int tile_row = (linear_id / SWIZZLE_W) % gridDim.y;</code></pre>
+
+      <p>Apart from this I tried to reduce address calc overhead for mma loop in this kernel, mainly by hosting static variables out of loop and reducing arithmetic and repetitive instructions in swizzle ops.</p>
+
+      <h3>Kernel 6 (91% folder)</h3>
+
+      <p>In this kernel I focused on stores back to GMEM from accumulated registers. Until now we are using 32bit store instructions with a single thread issuing 128 instructions for its 128 accumulations. If we look at accumulators layout in a warp, each thread is holding 2 consecutive accums, that mean we can use float2 stores effectively, to cut instruction bottleneck by half for stores. Another method for stores is to use smem as staging area and detangling data into contiguous 128 bit aligned. And since matmul is already completed, SMEM is free scratchpad. And for bank conflicts, since columns remain same in B tile and C tile, we can use the same swizzle function as well. Then we can assign accumulations back to threads and issue coalesced float4 stores. I found direct float2 offloading to be good enough and got negligible gains from float4 stores, so I am using float2. It takes my kernel par 90% of cublas performance</p>
+
+      <h3>Kernel 7 (simplify.cu) ~100% of cublas</h3>
+
+      <p>For the final kernel of the series, I don't pull out any optimisation algorithm or technique from cuda hat, rather we focus on simplifying what we have done till now, and let instruction scheduler do the job for us. Earlier in kernel 3, I mentioned of generalised multistaging pipelining. Turns out it remains as our major bottleneck. I revamp the kernel from tracking no. of tiles ingested by the kernel, and shift to a simple xor based tracking for 2 staged pipeline. Along with this I added an epilogue for the final tiles in the pipeline instead of processing them directly from the xor loop. This decision was after analyzing sass code. This kernel finally breaks the barrier and gives us hovering performances in the cublas regime.</p>
+
+    </article>
+
+    <div class="post-nav">
+      <a href="../../blog.html">← back to all posts</a>
+      <a href="../../index.html">home →</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="links">
+      <a href="https://github.com/" target="_blank" rel="noopener">github</a>
+      <a href="https://linkedin.com/" target="_blank" rel="noopener">linkedin</a>
+      <a href="mailto:you@example.com">mail</a>
+      <a href="https://twitter.com/" target="_blank" rel="noopener">x/twitter</a>
+    </div>
+    <div class="copyright">$ echo "© <span id="year"></span> — built with too much time and not enough sleep"</div>
+  </div>
+</footer>
+
+<script src="../../assets/js/rain.js"></script>
+<script src="../../assets/js/chrome.js"></script>
+</body>
+</html>
