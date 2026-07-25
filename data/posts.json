@@ -2,7 +2,7 @@
   {
     "title": "beating CuBLAS on A100",
     "date": "2026-07-25",
-    "slug": "blog/posts/2026-07-25-fp32-gemm-a100.html",
+    "slug": "blog/posts/2026-07-25-fp32_matmul_A100.html",
     "tags": ["cuda", "kernels", "gemm"],
     "excerpt": "Optimizing an fp32 GEMM kernel on A100 step by step \u2014 tensor cores, swizzling, ldmatrix, and SASS-level tuning \u2014 benchmarked against cuBLAS across seven kernel iterations."
   }
