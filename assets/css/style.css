@@ -317,6 +317,27 @@ article.post-content .text-box .label{
   letter-spacing:.05em; text-transform:uppercase; margin-bottom:.5rem;
 }
 
+/* ---------- text block (annotated code / instruction breakdowns) ---------- */
+article.post-content .text-block{
+  margin:1.4rem 0;
+  padding:1rem 1.2rem;
+  background:var(--bg-alt);
+  border:1px solid var(--border);
+  border-left:3px solid #7fc7ff;
+  border-radius:6px;
+  font-size:.88rem;
+}
+article.post-content .text-block pre{
+  margin:0 0 1rem;
+  background:var(--panel);
+}
+article.post-content .text-block p{ margin:0 0 .6rem; }
+article.post-content .text-block p:last-child{ margin-bottom:0; }
+article.post-content .text-block .label{
+  display:block; font-size:.7rem; color:#7fc7ff;
+  letter-spacing:.05em; text-transform:uppercase; margin-bottom:.5rem;
+}
+
 /* ---------- inline highlight ---------- */
 article.post-content mark, article.post-content .hl{
   background:rgba(61,255,154,.14);
