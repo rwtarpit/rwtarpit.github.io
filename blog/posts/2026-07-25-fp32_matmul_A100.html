@@ -9,6 +9,37 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+  /* Custom table styling to ensure proper tabular alignment */
+  table.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+  }
+  table.custom-table th, 
+  table.custom-table td {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.75rem 1rem;
+    text-align: left;
+  }
+  table.custom-table th {
+    background-color: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+  }
+  table.custom-table td.num {
+    text-align: right;
+  }
+  .yellow-highlight-link {
+    color: #f1fa8c !important; /* Yellow highlight color */
+    text-decoration: underline !important;
+    font-weight: 600;
+  }
+  .yellow-highlight-link:hover {
+    opacity: 0.8;
+  }
+</style>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -44,10 +75,10 @@
       <span>#gemm</span>
     </div>
 
-    <!-- Added GitHub Repository Link -->
+    <!-- Updated GitHub Link -->
     <div class="repo-link" style="margin-top: 1rem; margin-bottom: 1.5rem;">
-      <a href="https://github.com/rwtarpit/embroidery/tree/main/GEMM" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;">
-        <span>[GitHub Repository]</span> rwtarpit/embroidery/tree/main/GEMM &rarr;
+      <a href="https://github.com/rwtarpit/embroidery/tree/main/GEMM" target="_blank" rel="noopener" class="yellow-highlight-link" style="display: inline-flex; align-items: center; gap: 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;">
+        <span>GitHub</span> rwtarpit/embroidery/tree/main/GEMM &rarr;
       </a>
     </div>
 
@@ -82,17 +113,47 @@
 
       <p>The idea is simple: we follow the industry standard for GEMM kernels. We have matrix A and matrix B, and we're computing matrix C. We load both into SMEM first as A's and B's tiles and feed them to the GPU's computing units. The idea behind loading in tiles is to promote massive data reuse during computation by exploiting SMEM for staging data. All the arithmetic and address computation is done by CUDA cores, while we use tensor cores for computing the actual C = A×B.</p>
 
-      <div class="toc">
-        <span class="label">Jump to a kernel</span>
-        <ol>
-          <li><a href="#kernel-1">Kernel 1</a><span class="change">CUDA cores → tensor cores</span></li>
-          <li><a href="#kernel-2">Kernel 2</a><span class="change">PTX mma + swizzling</span></li>
-          <li><a href="#kernel-3">Kernel 3</a><span class="change">async loads + pipelining</span></li>
-          <li><a href="#kernel-4">Kernel 4</a><span class="change">warp remap + ldmatrix</span></li>
-          <li><a href="#kernel-5">Kernel 5</a><span class="change">grid swizzling</span></li>
-          <li><a href="#kernel-6">Kernel 6</a><span class="change">float2 GMEM stores</span></li>
-          <li><a href="#kernel-7">Kernel 7</a><span class="change">loop unrolling + epilogue</span></li>
-        </ol>
+      <!-- Formatted Table of Contents -->
+      <div style="margin: 2rem 0;">
+        <span class="label" style="font-weight: bold; font-family: 'JetBrains Mono', monospace;">Jump to a kernel</span>
+        <table class="custom-table" style="margin-top: 0.5rem;">
+          <thead>
+            <tr>
+              <th style="width: 30%;">Kernel</th>
+              <th>Key Implementation Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="#kernel-1">Kernel 1</a></td>
+              <td>CUDA cores → tensor cores</td>
+            </tr>
+            <tr>
+              <td><a href="#kernel-2">Kernel 2</a></td>
+              <td>PTX mma + swizzling</td>
+            </tr>
+            <tr>
+              <td><a href="#kernel-3">Kernel 3</a></td>
+              <td>async loads + pipelining</td>
+            </tr>
+            <tr>
+              <td><a href="#kernel-4">Kernel 4</a></td>
+              <td>warp remap + ldmatrix</td>
+            </tr>
+            <tr>
+              <td><a href="#kernel-5">Kernel 5</a></td>
+              <td>grid swizzling</td>
+            </tr>
+            <tr>
+              <td><a href="#kernel-6">Kernel 6</a></td>
+              <td>float2 GMEM stores</td>
+            </tr>
+            <tr>
+              <td><a href="#kernel-7">Kernel 7</a></td>
+              <td>loop unrolling + epilogue</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <h2 id="kernels">KERNELS</h2>
@@ -187,7 +248,7 @@
     "ldmatrix.sync.aligned.m8n8.x4.shared.b16 "
     "{%0, %1, %2, %3}, [%4];\n"
     : "=r"(frag_A[i][0]), "=r"(frag_A[i][1]), "=r"(frag_A[i][2]), "=r"(frag_A[i][3]) // Outputs
-    : "r"(As_ptr)                                                                    // Input
+    : "r"(As_ptr)                                                                  // Input
 );</code></pre>
 
       <ul>
@@ -255,18 +316,51 @@
 
       <h2 id="performance">Performance comparison</h2>
 
-      <table>
+      <!-- Formatted Performance Results Table -->
+      <table class="custom-table">
         <thead>
-          <tr><th>Kernel</th><th>Major change</th><th>% of cuBLAS</th></tr>
+          <tr>
+            <th>Kernel</th>
+            <th>Major change</th>
+            <th style="text-align: right;">% of cuBLAS</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><a href="#kernel-1">Kernel 1</a></td><td>CUDA cores → tensor cores</td><td class="num">~33%</td></tr>
-          <tr><td><a href="#kernel-2">Kernel 2</a></td><td>PTX mma + swizzling</td><td class="num">~43%</td></tr>
-          <tr><td><a href="#kernel-3">Kernel 3</a></td><td>async loads + pipelining</td><td class="num">~50%</td></tr>
-          <tr><td><a href="#kernel-4">Kernel 4</a></td><td>warp remap + ldmatrix</td><td class="num">~79%</td></tr>
-          <tr><td><a href="#kernel-5">Kernel 5</a></td><td>grid swizzling</td><td class="num">~85%</td></tr>
-          <tr><td><a href="#kernel-6">Kernel 6</a></td><td>float2 GMEM stores</td><td class="num">~90%</td></tr>
-          <tr><td><a href="#kernel-7">Kernel 7</a></td><td>loop unrolling + epilogue</td><td class="num">~100% (~105 TFLOPS)</td></tr>
+          <tr>
+            <td><a href="#kernel-1">Kernel 1</a></td>
+            <td>CUDA cores → tensor cores</td>
+            <td class="num">~33%</td>
+          </tr>
+          <tr>
+            <td><a href="#kernel-2">Kernel 2</a></td>
+            <td>PTX mma + swizzling</td>
+            <td class="num">~43%</td>
+          </tr>
+          <tr>
+            <td><a href="#kernel-3">Kernel 3</a></td>
+            <td>async loads + pipelining</td>
+            <td class="num">~50%</td>
+          </tr>
+          <tr>
+            <td><a href="#kernel-4">Kernel 4</a></td>
+            <td>warp remap + ldmatrix</td>
+            <td class="num">~79%</td>
+          </tr>
+          <tr>
+            <td><a href="#kernel-5">Kernel 5</a></td>
+            <td>grid swizzling</td>
+            <td class="num">~85%</td>
+          </tr>
+          <tr>
+            <td><a href="#kernel-6">Kernel 6</a></td>
+            <td>float2 GMEM stores</td>
+            <td class="num">~90%</td>
+          </tr>
+          <tr>
+            <td><a href="#kernel-7">Kernel 7</a></td>
+            <td>loop unrolling + epilogue</td>
+            <td class="num">~100% (~105 TFLOPS)</td>
+          </tr>
         </tbody>
       </table>
 
