@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>What is GEMM? — blog</title>
+<title>Optimising fp32 GEMM on A100 — blog</title>
 <meta name="description" content="Optimizing an fp32 GEMM kernel on A100 step by step, from tensor-core basics to swizzling, ldmatrix, and SASS-level tuning, benchmarked against cuBLAS.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,18 +34,26 @@
 
   <div class="page-header">
     <div class="breadcrumb"><a href="../../index.html">~</a> / <a href="../../blog.html">blog</a> / fp32-gemm-a100</div>
-    <h1>What is GEMM?</h1>
+    <h1>Optimising fp32 GEMM on A100</h1>
   </div>
 
   <section style="border-top:none; padding-top:0;">
     <div class="article-meta">
-      <span>draft</span>
       <span>#cuda</span>
       <span>#kernels</span>
       <span>#gemm</span>
     </div>
 
+    <!-- Added GitHub Repository Link -->
+    <div class="repo-link" style="margin-top: 1rem; margin-bottom: 1.5rem;">
+      <a href="https://github.com/rwtarpit/embroidery/tree/main/GEMM" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;">
+        <span>[GitHub Repository]</span> rwtarpit/embroidery/tree/main/GEMM &rarr;
+      </a>
+    </div>
+
     <article class="post-content">
+
+      <h2 id="what-is-gemm">What is GEMM?</h2>
 
       <p>GEMM stands for <strong>General Matrix Multiply</strong>, and it's one of the most important and most studied computational kernels in all of computing. The operation itself is deceptively simple:</p>
 
@@ -70,13 +78,26 @@
 
       <p>Summary of what's about to come: I optimize the fp32 matmul kernel step by step using techniques from the literature, and benchmark it against NVIDIA's hand-tuned kernel from their cuBLAS library. Unfortunately I don't have access to <code>ncu</code> for kernel profiling on A100, but that doesn't stop us from profiling the kernel and verifying bottlenecks — I mainly used <code>clock64()</code> to measure clock cycles over blocks of code.</p>
 
-      <h2>Architectural Overview</h2>
+      <h2 id="architectural-overview">Architectural Overview</h2>
 
       <p>The idea is simple: we follow the industry standard for GEMM kernels. We have matrix A and matrix B, and we're computing matrix C. We load both into SMEM first as A's and B's tiles and feed them to the GPU's computing units. The idea behind loading in tiles is to promote massive data reuse during computation by exploiting SMEM for staging data. All the arithmetic and address computation is done by CUDA cores, while we use tensor cores for computing the actual C = A×B.</p>
 
-      <h2>KERNELS</h2>
+      <div class="toc">
+        <span class="label">Jump to a kernel</span>
+        <ol>
+          <li><a href="#kernel-1">Kernel 1</a><span class="change">CUDA cores → tensor cores</span></li>
+          <li><a href="#kernel-2">Kernel 2</a><span class="change">PTX mma + swizzling</span></li>
+          <li><a href="#kernel-3">Kernel 3</a><span class="change">async loads + pipelining</span></li>
+          <li><a href="#kernel-4">Kernel 4</a><span class="change">warp remap + ldmatrix</span></li>
+          <li><a href="#kernel-5">Kernel 5</a><span class="change">grid swizzling</span></li>
+          <li><a href="#kernel-6">Kernel 6</a><span class="change">float2 GMEM stores</span></li>
+          <li><a href="#kernel-7">Kernel 7</a><span class="change">loop unrolling + epilogue</span></li>
+        </ol>
+      </div>
 
-      <h3>Kernel 1 (Simon's kernel, CUDA cores replaced with tensor cores)</h3>
+      <h2 id="kernels">KERNELS</h2>
+
+      <h3 id="kernel-1">Kernel 1 (Simon's kernel, CUDA cores replaced with tensor cores)</h3>
 
       <p>Simon's best kernel (optimized for CUDA cores and consumer hardware before tensor cores arrived — the pre-Volta era) runs at just 15% of what cuBLAS has to offer on an A100.</p>
 
@@ -86,7 +107,7 @@
 
       <p>As this was my first introduction to tensor cores, I was excited to see how much of a performance boost we could get by simply swapping CUDA cores for tensor cores. So I took Simon's kernel and swapped out the cores. Ampere supports only one PTX instruction for fp32 matmuls — <code>mma.tf32.16x8x8</code>. We'll discuss how to read PTX instructions shortly; here I used the high-level wmma API. Only the compute and stores back to GMEM change, and everything else stays the same. This alone doubles the performance and reaches ~33% of cuBLAS. That's enough to answer why tensor cores are called beasts. Now it's time to tame the beast — apparently by "feeding the beast"!</p>
 
-      <h3>Kernel 2 (generalised kernel with swizzling and ptx mma)</h3>
+      <h3 id="kernel-2">Kernel 2 (generalised kernel with swizzling and ptx mma)</h3>
 
       <p>This isn't the first kernel I wrote following the above, but it's the first one I'm documenting after numerous experiments. I significantly parted ways from Simon's kernel and introduced my own warp tiling layout (not the best idea — I spotted and corrected this later). Each CTA works on computing a squarish tile of output. Furthermore, I use 1D warp tiling instead of 2D (the mistake) along the M dimension, i.e. each warp computes a rectangular strip along tile A and loads the complete tile B in the form of sub-tiles (rectangular strips) along the K dimension.</p>
 
@@ -118,7 +139,7 @@
 
       <p>I've kept this inefficient kernel here as part of my worklog, and as a caution for what not to do. Or perhaps I'm just too lazy to go back and correct it.</p>
 
-      <h3>Kernel 3 (adding async loads and double buffering)</h3>
+      <h3 id="kernel-3">Kernel 3 (adding async loads and double buffering)</h3>
 
       <p>We keep everything the same as the previous kernel except for two changes: async loads from global memory to SMEM using the <code>cuda memcpy_async</code> API, and a setup for a multi-buffered pipeline.</p>
 
@@ -130,7 +151,7 @@
 
       <p>Then comes the multi-staged pipeline. The idea is that compute is much faster than data loading, which means that once tensor cores finish computing a tile's output, they sit idle while the next tile of data loads. This starvation can be avoided if we load multiple tiles of each input matrix ahead of time and keep the pipeline full. We can schedule a tile to load and start compute on the current tile simultaneously, since <code>cp.async</code> is asynchronous and GMEM → SMEM loading is completely independent of tensor core mma in hardware — it's a direct, feasible path. So that's what I did. For the pipelining itself, I again use a generic structure so I could experiment with different <code>num_stages</code> values instead of hardcoding it at 2 or 3. This reaches 50% of cuBLAS performance. At this point I suspected there was significant overhead from tracking pipeline variables, but I wanted to find the best config first before locking it in.</p>
 
-      <h3>Kernel 4 (ldmatrix and remapping warp layout)</h3>
+      <h3 id="kernel-4">Kernel 4 (ldmatrix and remapping warp layout)</h3>
 
       <p>In this kernel I introduced two major changes — remapping the warp layout for better data reuse, and using ldmatrix for loading tile fragments from SMEM to registers.</p>
 
@@ -182,7 +203,7 @@
 
       <p>This reaches ~80% of cuBLAS. For anyone curious about individual features' impact: I saw around 5-7% from shifting to ldmatrix over manual SMEM-to-register loads, and roughly 15% from switching to the 2D warp layout with 8 warps per CTA (measured on 128×16×128 tile sizes).</p>
 
-      <h3>Kernel 5 (grid swizzling)</h3>
+      <h3 id="kernel-5">Kernel 5 (grid swizzling)</h3>
 
       <p>The next kernel has a few minor changes and reaches up to ~85% performance. Mainly, we introduce grid swizzling. Its purpose is to reorder the sequence in which CTAs execute to improve L2 cache reuse. By default, CTAs execute in row-major order across the grid. In GEMM, data reuse is concentrated — neighbouring CTAs load the same data along at least one dimension. Under linear scheduling, this data gets thrashed and evicted from L2 to make room for new tiles.</p>
 
@@ -196,11 +217,11 @@
 
       <p>Apart from this, I tried to reduce address-calculation overhead in the mma loop, mainly by hoisting static variables for B fragments out of the loop and using bitwise and shift operators instead of standard arithmetic. This simplified the indexing so the compiler could pull repetitive ops out of the dynamic loop and just increment the pointer while reusing the predicate. I did the same for A fragments in the next kernel.</p>
 
-      <h3>Kernel 6 (stores to GMEM)</h3>
+      <h3 id="kernel-6">Kernel 6 (stores to GMEM)</h3>
 
       <p>In this kernel I focused on stores back to GMEM from accumulated registers. Until now we've been using 32-bit store instructions, with a single thread issuing 128 instructions for its 128 accumulations. Looking at the accumulator layout in a warp, each thread holds 2 consecutive accumulations, so we can use float2 stores instead, cutting the store instruction count in half. Another approach is to use SMEM as a staging area and untangle the data into contiguous 128-bit-aligned chunks. Since the matmul is already complete at this point, SMEM is a free scratchpad. For bank conflicts, since the columns stay the same across the B tile and C tile, we can reuse the same swizzle function. We can then assign accumulations back to threads and issue coalesced float4 stores. I found direct float2 stores good enough, with negligible gains from float4, so I'm using float2. This takes the kernel past 90% of cuBLAS performance.</p>
 
-      <h3>Kernel 7 (compiler optimizations)</h3>
+      <h3 id="kernel-7">Kernel 7 (compiler optimizations)</h3>
 
       <p>For the final kernel of the series, I don't pull any new optimization algorithm or technique out of the CUDA hat — instead we focus on simplifying what we've already built and letting the compiler and instruction scheduler do the job for us. We add <code>#pragma unroll</code> on the for loops for mma compute and stores, which takes us to ~98%.</p>
 
@@ -232,9 +253,44 @@
         </ul>
       </div>
 
+      <h2 id="performance">Performance comparison</h2>
+
+      <table>
+        <thead>
+          <tr><th>Kernel</th><th>Major change</th><th>% of cuBLAS</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><a href="#kernel-1">Kernel 1</a></td><td>CUDA cores → tensor cores</td><td class="num">~33%</td></tr>
+          <tr><td><a href="#kernel-2">Kernel 2</a></td><td>PTX mma + swizzling</td><td class="num">~43%</td></tr>
+          <tr><td><a href="#kernel-3">Kernel 3</a></td><td>async loads + pipelining</td><td class="num">~50%</td></tr>
+          <tr><td><a href="#kernel-4">Kernel 4</a></td><td>warp remap + ldmatrix</td><td class="num">~79%</td></tr>
+          <tr><td><a href="#kernel-5">Kernel 5</a></td><td>grid swizzling</td><td class="num">~85%</td></tr>
+          <tr><td><a href="#kernel-6">Kernel 6</a></td><td>float2 GMEM stores</td><td class="num">~90%</td></tr>
+          <tr><td><a href="#kernel-7">Kernel 7</a></td><td>loop unrolling + epilogue</td><td class="num">~100% (~105 TFLOPS)</td></tr>
+        </tbody>
+      </table>
+
+      <figure>
+        <img src="../../assets/img/result.png" alt="Final kernel performance vs cuBLAS across matrix sizes">
+      </figure>
+
       <p>With all the resources and write-ups I read about GEMM and CUDA, I built up a mental map of several optimizations I used, while also coming across many newer ones along the way. My understanding of PTX, SASS code, instruction scheduling, and hardware-software cooperation gained a great deal of clarity, along with my ability to write efficient, clean kernels.</p>
 
       <p>From a practical standpoint, GEMM kernels are rarely written in isolation nowadays — preceding and successive kernels are often fused with GEMM as prologue and epilogue, along with quantisation. While the latest hardware generations introduce newer challenges and optimisations, this kernel is a good launchpad for laying the foundation to write ever-advancing, optimised GEMM and GPU kernels in general.</p>
+
+      <h2 id="references">References</h2>
+
+      <div class="references">
+        <span class="label">Further reading</span>
+        <ul>
+          <li><a href="https://siboehm.com/articles/22/CUDA-MMM" target="_blank" rel="noopener">Simon Boehm — "How to Optimize a CUDA Matmul Kernel for cuBLAS-like Performance"</a></li>
+          <li><a href="https://www.aleksagordic.com/blog/matmul" target="_blank" rel="noopener">Aleksa Gordić — matmul blog</a></li>
+          <li><a href="https://leimao.github.io/blog/CUDA-Shared-Memory-Swizzling/" target="_blank" rel="noopener">Lei Mao — CUDA Shared Memory Swizzling</a></li>
+          <li><a href="https://leimao.github.io/blog/CuTe-ldmatrix/" target="_blank" rel="noopener">Lei Mao — CuTe ldmatrix</a></li>
+          <li><span class="src">NVIDIA PTX ISA / CUDA C++ Programming Guide (official docs)</span></li>
+          <li><span class="src">Programming Massively Parallel Processors (PMPP), Kirk &amp; Hwu</span></li>
+        </ul>
+      </div>
 
     </article>
 
