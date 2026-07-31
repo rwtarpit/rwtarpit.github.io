@@ -2,34 +2,67 @@
   {
     "repo": "vllm-project/vllm",
     "repo_url": "https://github.com/vllm-project/vllm",
-    "title": "Fix KV cache fragmentation under long-context batches",
-    "pr_url": "https://github.com/vllm-project/vllm",
-    "status": "merged",
-    "date": "2026-06-02",
-    "additions": 214,
-    "deletions": 58,
-    "tags": ["kernels", "memory"]
-  },
-  {
-    "repo": "pytorch/pytorch",
-    "repo_url": "https://github.com/pytorch/pytorch",
-    "title": "Improve fused attention kernel dispatch for long sequences",
-    "pr_url": "https://github.com/pytorch/pytorch",
-    "status": "review",
-    "date": "2026-05-14",
-    "additions": 96,
-    "deletions": 12,
-    "tags": ["cuda", "attention"]
-  },
-  {
-    "repo": "triton-lang/triton",
-    "repo_url": "https://github.com/triton-lang/triton",
-    "title": "Add autotune config for grouped-query attention",
-    "pr_url": "https://github.com/triton-lang/triton",
+    "title": "Implement MLA Decode Backend using Helion kernels",
+    "pr_url": "https://github.com/vllm-project/vllm/pull/42886",
     "status": "open",
-    "date": "2026-04-28",
-    "additions": 41,
-    "deletions": 3,
-    "tags": ["kernels", "autotune"]
+    "date": "2026-07-20",
+    "additions": 2050,
+    "deletions": 2,
+    "tags": ["kernels", "inference"]
+  },
+  {
+    "repo": "pytorch/ignite",
+    "repo_url": "https://github.com/pytorch/ignite",
+    "title": "[Feature] Implement HitRate metric for RecSys",
+    "pr_url": "https://github.com/pytorch/ignite/pull/3530",
+    "status": "merged",
+    "date": "2026-02-20",
+    "additions": 335,
+    "deletions": 0,
+    "tags": ["metrics", "recsys"]
+  },
+  {
+    "repo": "aeon-toolkit/aeon",
+    "repo_url": "https://github.com/aeon-toolkit/aeon",
+    "title": "[ENH] Add loaders for Monster datasets with hugging_face dependency",
+    "pr_url": "https://github.com/aeon-toolkit/aeon/pull/3141",
+    "status": "merged",
+    "date": "2026-02-17",
+    "additions": 196,
+    "deletions": 0,
+    "tags": ["data-loading", "huggingface"]
+  },
+  {
+    "repo": "aeon-toolkit/aeon",
+    "repo_url": "https://github.com/aeon-toolkit/aeon",
+    "title": "[ENH] Implement series_to_series forecaster mixin",
+    "pr_url": "https://github.com/aeon-toolkit/aeon/pull/3146",
+    "status": "merged",
+    "date": "2025-12-12",
+    "additions": 158,
+    "deletions": 7,
+    "tags": ["forecasting", "api-design"]
+  },
+  {
+    "repo": "aeon-toolkit/aeon",
+    "repo_url": "https://github.com/aeon-toolkit/aeon",
+    "title": "[ENH] Implement s2s Linear Forecaster models family",
+    "pr_url": "https://github.com/aeon-toolkit/aeon/pull/3171",
+    "status": "open",
+    "date": "2025-12-12",
+    "additions": 596,
+    "deletions": 9,
+    "tags": ["forecasting", "deep-learning"]
+  },
+  {
+    "repo": "aeon-toolkit/aeon",
+    "repo_url": "https://github.com/aeon-toolkit/aeon",
+    "title": "[ENH] Add Feature load_model to Deep Regressor Ensembles",
+    "pr_url": "https://github.com/aeon-toolkit/aeon/pull/3130",
+    "status": "merged",
+    "date": "2025-11-24",
+    "additions": 224,
+    "deletions": 26,
+    "tags": ["serialization", "bugfix"]
   }
 ]
