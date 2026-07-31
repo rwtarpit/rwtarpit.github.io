@@ -147,7 +147,7 @@ main{ position:relative; z-index:1; max-width:920px; margin:0 auto; padding:0 1.
 .hint kbd{ border:1px solid var(--border); border-radius:3px; padding:0 .3rem; color:var(--green); }
 
 /* ---------- section framing ---------- */
-section{ padding:3rem 0; border-top:1px dashed var(--border); }
+section{ padding:3rem 0; border-top:1px dashed var(--border); scroll-margin-top:4.5rem; }
 .section-head{ display:flex; align-items:baseline; gap:.6rem; margin-bottom:1.4rem; }
 .section-head .tag{ color:var(--green-dim); font-size:.78rem; }
 .section-head h2{
@@ -360,6 +360,64 @@ article.post-content .equation{
   text-align:center; color:var(--green-bright);
   font-size:1rem; margin:1.4rem 0; letter-spacing:.02em;
 }
+
+/* ---------- table of contents ---------- */
+article.post-content .toc{
+  margin:1.4rem 0 1.8rem;
+  padding:1rem 1.2rem;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:var(--panel);
+}
+article.post-content .toc .label{
+  display:block; font-size:.7rem; color:var(--green-dim);
+  letter-spacing:.05em; text-transform:uppercase; margin-bottom:.7rem;
+}
+article.post-content .toc ol{
+  margin:0; padding-left:1.3rem; font-size:.85rem;
+}
+article.post-content .toc li{ margin-bottom:.45rem; }
+article.post-content .toc li:last-child{ margin-bottom:0; }
+article.post-content .toc a{
+  color:var(--green-bright); text-decoration:none;
+}
+article.post-content .toc a:hover{ text-decoration:underline; }
+article.post-content .toc .change{ color:var(--text-dim); }
+article.post-content .toc .change::before{ content:" — "; }
+
+/* ---------- data table (perf comparison, references) ---------- */
+article.post-content table{
+  width:100%; border-collapse:collapse; margin:1.4rem 0;
+  font-size:.85rem; border:1px solid var(--border); border-radius:8px; overflow:hidden;
+}
+article.post-content th, article.post-content td{
+  text-align:left; padding:.6rem .9rem; border-bottom:1px solid var(--border);
+}
+article.post-content thead th{
+  background:var(--bg-alt); color:var(--green-bright);
+  font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
+}
+article.post-content tbody tr:last-child td{ border-bottom:none; }
+article.post-content tbody tr:hover{ background:rgba(61,255,154,.04); }
+article.post-content td.num{ color:var(--green-bright); font-weight:600; }
+
+/* ---------- references box ---------- */
+article.post-content .references{
+  margin:1.4rem 0;
+  padding:1rem 1.2rem;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:var(--panel);
+}
+article.post-content .references .label{
+  display:block; font-size:.7rem; color:var(--green-dim);
+  letter-spacing:.05em; text-transform:uppercase; margin-bottom:.7rem;
+}
+article.post-content .references ul{ margin:0; padding-left:1.2rem; font-size:.85rem; }
+article.post-content .references li{ margin-bottom:.5rem; }
+article.post-content .references li:last-child{ margin-bottom:0; }
+article.post-content .references a{ color:var(--green); }
+article.post-content .references .src{ color:var(--text-dim); font-size:.78rem; }
 
 /* ---------- footer ---------- */
 footer{ padding:2.5rem 0 3rem; border-top:1px dashed var(--border); font-size:.8rem; color:var(--text-dim); }
