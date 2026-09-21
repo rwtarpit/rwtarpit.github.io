@@ -101,7 +101,7 @@
 
       <h2 id="background">Background</h2>
 
-      <p>A few questions that intrigued me were why we need CuTe, and how its mathematical modelling fits into GPU kernels. I found the answers in this talk on the GPU Mode channel by Cris Cecka (CuTe's inventor). I'd highly recommend it if you want intuition around CuTe — and on top of that, Cris is a brilliant storyteller!</p>
+      <p>A few questions that intrigued me were why we need CuTe, and how its mathematical modelling fits into GPU kernels. I found the answers in <a href="https://www.youtube.com/watch?v=vzUhbDO_0qk" target="_blank" rel="noopener noreferrer">this talk</a> on the GPU Mode channel by Cris Cecka (CuTe's inventor). I'd highly recommend it if you want intuition around CuTe — and on top of that, Cris is a brilliant storyteller!</p>
 
       <p>I, from my side, will try to explain it as well as I can as I walk through the kernel.</p>
 
@@ -118,7 +118,7 @@
 
       <p>All H100 benchmarks were executed via Modal. Because Modal runs inside containerized environments without root access, we cannot lock GPU clock frequencies to eliminate thermal throttling or power-state fluctuations. As a result, performance metrics may vary by ~10 TFLOPS across different runs, so please take the absolute numbers with a slight grain of salt.</p>
 
-      <p>This kernel development is based on an example CuTeDSL kernel from the CUTLASS repository, which acts as the baseline. I'll only be detailing the final kernel that beat cuBLASLt, while explaining CuTe in detail. This alone makes this blog long enough, and is the reason I'm not mapping out every kernel written during the iteration. That said, I'll mention how each new feature we add results in performance gains, while also stating the ones I stashed due to regression.</p>
+      <p>This kernel development is based on an <a href="https://github.com/NVIDIA/cutlass" target="_blank" rel="noopener noreferrer">example</a> from the CUTLASS repository, which acts as the baseline. I'll only be detailing the final kernel that beat cuBLASLt, while explaining CuTe in detail. This alone makes this blog long enough, and is the reason I'm not mapping out every kernel written during the iteration. That said, I'll mention how each new feature we add results in performance gains, while also stating the ones I stashed due to regression.</p>
 
       <h2 id="kernel">Kernel</h2>
 
@@ -383,10 +383,10 @@ bSG_sC, bSG_gC = cute.nvgpu.cpasync.tma_partition(
         <thead>
           <tr>
             <th>Problem shape</th>
-            <th>cuBLAS (TFLOPS)</th>
-            <th>cuBLAS time (µs)</th>
+            <th>cuBLAS (TFLOPs)</th>
+            <th>cuBLAS time (us)</th>
             <th>Kernel (TFLOPS)</th>
-            <th>Kernel time (µs)</th>
+            <th>Kernel time (us)</th>
             <th>Numerical error</th>
           </tr>
         </thead>
@@ -411,8 +411,8 @@ bSG_sC, bSG_gC = cute.nvgpu.cpasync.tma_partition(
         <thead>
           <tr>
             <th>Promotion interval</th>
-            <th>Kernel (TFLOPS)</th>
-            <th>Kernel time (µs)</th>
+            <th>Kernel (TFLOPs)</th>
+            <th>Kernel time (us)</th>
             <th>Numerical error</th>
           </tr>
         </thead>
@@ -429,11 +429,23 @@ bSG_sC, bSG_gC = cute.nvgpu.cpasync.tma_partition(
 
       <p>Another thing that creates parity issues in numerical accuracy is that floating point addition isn't associative, i.e. <code>(a+b)+c != a+(b+c)</code>. This means cuBLAS using a different tiling order, tile sizes, etc. can result in different rounding errors between cuBLAS and our kernel.</p>
 
-      <p>Lastly, one optimisation to squeeze out the last remaining TFLOPS that I haven't tried yet, and which has proven to boost performance on larger problem shapes, is Hilbert curves for tile scheduling and better L2 cache hit rate. Pranjal's blog explains it quite nicely and shows the results in numbers.</p>
+      <p>Lastly, one optimisation to squeeze out the last remaining TFLOPS that I haven't tried yet, and which has proven to boost performance on larger problem shapes, is <code>Hilbert curves</code> for tile scheduling and better L2 cache hit rate. <a href="https://cudaforfun.substack.com/p/outperforming-cublas-on-h100-a-worklog" target="_blank" rel="noopener noreferrer">Pranjal's blog</a> explains it quite nicely and shows the results in numbers.</p>
 
       <h2 id="conclusion">Conclusion</h2>
 
       <p>This blog post explores CuTeDSL and the Hopper architecture with a walkthrough of a SOTA FP8 GEMM kernel. We beat cuBLAS on dense shapes consistently in fast accumulation mode. cuBLAS heuristics on slow accumulation remain a mystery to me, as I've used all the tools in my inventory to reason about it. I'm curious about anything I missed in this post, and would like to know and learn more. Fellow readers who pave this slow accumulation path are requested to let me know about it too.</p>
+
+      <div class="references">
+        <span class="label">References</span>
+        <ul>
+          <li>Cris Cecka’s Talk on GPU Mode YouTube Channel <span class="src">(<a href="https://www.youtube.com/watch?v=vzUhbDO_0qk" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=vzUhbDO_0qk</a>)</span></li>
+          <li>Official CUTLASS repository <span class="src">(<a href="https://github.com/NVIDIA/cutlass" target="_blank" rel="noopener noreferrer">https://github.com/NVIDIA/cutlass</a>)</span></li>
+          <li>Simon Veitner’s CuTeDSL series <span class="src">(<a href="https://veitner.bearblog.dev/blog/" target="_blank" rel="noopener noreferrer">https://veitner.bearblog.dev/blog/</a>)</span></li>
+          <li>Thien Tran’s CuteDSL kernels <span class="src">(<a href="https://github.com/gau-nernst/gn-kernels/tree/main/gn_kernels/cutedsl" target="_blank" rel="noopener noreferrer">https://github.com/gau-nernst/gn-kernels/tree/main/gn_kernels/cutedsl</a>)</span></li>
+          <li>Colfax’s tile grid scheduling <span class="src">(<a href="https://research.colfax-intl.com/cutlass-tutorial-persistent-kernels-and-stream-k/" target="_blank" rel="noopener noreferrer">https://research.colfax-intl.com/cutlass-tutorial-persistent-kernels-and-stream-k/</a>)</span></li>
+          <li>Pranjal’s FP16 GEMM blog <span class="src">(<a href="https://cudaforfun.substack.com/p/outperforming-cublas-on-h100-a-worklog" target="_blank" rel="noopener noreferrer">https://cudaforfun.substack.com/p/outperforming-cublas-on-h100-a-worklog</a>)</span></li>
+        </ul>
+      </div>
 
     </article>
 
