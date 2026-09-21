@@ -5,5 +5,17 @@
     "slug": "blog/posts/2026-07-25-fp32_matmul_A100.html",
     "tags": ["cuda", "kernels", "gemm"],
     "excerpt": "Optimizing an fp32 GEMM kernel on A100 step by step \u2014 tensor cores, swizzling, ldmatrix, and SASS-level tuning \u2014 benchmarked against cuBLAS across seven kernel iterations."
+  },
+  {
+    "title": "Beating CuBLAS on H100 with a CuTeDSL GEMM kernel",
+    "date": "2026-09-21",
+    "slug": "blog/posts/2026-09-21-fp8_gemm_H100.html",
+    "tags": [
+      "cuda",
+      "kernels",
+      "gemm",
+      "hopper"
+    ],
+    "excerpt": "Exploring Hopper and CuTe tensor algebra with CuTeDSL to write an FP8 GEMM kernel that beats cuBLAS on the fast accumulation path."
   }
 ]
