@@ -167,7 +167,7 @@ section{ padding:3rem 0; border-top:1px dashed var(--border); scroll-margin-top:
 
 .status-list{ list-style:none; margin:0; padding:0; border:1px solid var(--border); border-radius:6px; overflow:hidden; }
 .status-list li{
-  display:flex; justify-content:space-between; gap:1rem;
+  display:flex; justify-between:space-between; gap:1rem;
   padding:.55rem .8rem;
   font-size:.78rem;
   border-bottom:1px solid var(--border);
@@ -395,7 +395,7 @@ article.post-content th, article.post-content td{
 }
 article.post-content thead th{
   background:var(--bg-alt); color:var(--green-bright);
-  font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
+  font-size:.72rem; text-transform:none; letter-spacing:.05em;
 }
 article.post-content tbody tr:last-child td{ border-bottom:none; }
 article.post-content tbody tr:hover{ background:rgba(61,255,154,.04); }
