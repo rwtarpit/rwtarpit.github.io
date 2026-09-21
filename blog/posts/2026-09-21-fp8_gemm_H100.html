@@ -123,7 +123,7 @@
 
       <p>To benchmark our kernel we'll be using cuBLASLt, which is a lightweight, low-level version of cuBLAS that provides more control to find the best kernel for our problem.</p>
 
-      <p>All H100 benchmarks were executed via Modal. Because Modal runs inside containerized environments without root access, we cannot lock GPU clock frequencies to eliminate thermal throttling or power-state fluctuations. As a result, performance metrics may vary by ~10 TFLOPS across different runs, so please take the absolute numbers with a slight grain of salt.</p>
+      <p>All H100 benchmarks were executed via Modal. Because Modal runs inside containerized environments without root access, we cannot lock GPU clock frequencies to eliminate thermal throttling or power-state fluctuations. As a result, performance metrics may vary by ~10-20 TFLOPS across different runs, so please take the absolute numbers with a slight grain of salt.</p>
 
       <p>This kernel development is based on an <a href="https://github.com/NVIDIA/cutlass/blob/main/examples/python/CuTeDSL/cute/hopper/kernel/dense_gemm/dense_gemm_fp8_2xacc.py" target="_blank" rel="noopener noreferrer">example</a> from the CUTLASS repository, which acts as the baseline. I'll only be detailing the final kernel that beat cuBLASLt, while explaining CuTe in detail. This alone makes this blog long enough, and is the reason I'm not mapping out every kernel written during the iteration. That said, I'll mention how each new feature we add results in performance gains, while also stating the ones I stashed due to regression.</p>
 
