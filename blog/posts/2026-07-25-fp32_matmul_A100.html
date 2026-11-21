@@ -266,7 +266,7 @@
 
       <h3 id="kernel-5">Kernel 5 (grid swizzling)</h3>
 
-      <p>The next kernel has a few minor changes and reaches up to ~85% performance. Mainly, we introduce grid swizzling. Its purpose is to reorder the sequence in which CTAs execute to improve L2 cache reuse. By default, CTAs execute in row-major order across the grid. In GEMM, data reuse is concentrated — neighbouring CTAs load the same data along at least one dimension. Under linear scheduling, this data gets thrashed and evicted from L2 to make room for new tiles.</p>
+      <p>The next kernel has a few minor changes and reaches up to ~85% performance. Mainly, we introduce grid swizzling. Its purpose is to reorder the sequence in which CTAs execute to improve L2 cache reuse. By default, CTAs execute in column-major order across the grid. In GEMM, data reuse is concentrated — neighbouring CTAs load the same data along at least one dimension. Under linear scheduling, this data gets thrashed and evicted from L2 to make room for new tiles.</p>
 
       <p>So we swizzle the grid layout and change the CTA execution order for a better L2 hit rate and less thrashing. This means CTAs executing concurrently on different SMs can fetch reusable data from L2 instead of GMEM. This can be done in just a couple of lines of code:</p>
 
