@@ -2,6 +2,28 @@
   {
     "repo": "vllm-project/vllm",
     "repo_url": "https://github.com/vllm-project/vllm",
+    "title": "[Perf][Kernel] Coalesce K_Buffer loads and co-schedule head blocks TRITON_MLA (upto 1.7x gain at kernel level)",
+    "pr_url": "https://github.com/vllm-project/vllm/pull/69029",
+    "status": "merged",
+    "date": "2026-11-23",
+    "additions": 12,
+    "deletions": 15,
+    "tags": ["kernels", "performance"]
+  },
+  {
+    "repo": "vllm-project/vllm",
+    "repo_url": "https://github.com/vllm-project/vllm",
+    "title": "[Feature][KV Offload] Enable compressed-MLA support for TP agnostic offloading",
+    "pr_url": "https://github.com/vllm-project/vllm/pull/66637",
+    "status": "open",
+    "date": "2026-11-10",
+    "additions": 311,
+    "deletions": 15,
+    "tags": ["kv-offload", "inference"]
+  },
+  {
+    "repo": "vllm-project/vllm",
+    "repo_url": "https://github.com/vllm-project/vllm",
     "title": "Implement MLA Decode Backend using Helion kernels",
     "pr_url": "https://github.com/vllm-project/vllm/pull/42886",
     "status": "open",
